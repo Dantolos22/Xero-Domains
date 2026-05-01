@@ -563,7 +563,7 @@ function connectAbly(apiKey, room) {
   // Load Ably SDK from CDN
   if (!window.Ably) {
     const s = document.createElement("script");
-    s.src = "https://cdn.ably.com/lib/ably.min-1.js";
+    s.src = "https://cdn.ably.com/lib/ably.min-2.js";
     s.onload = () => _doConnect(apiKey, room);
     s.onerror = () => { setChip("", "Offline"); safeToast("❌ Failed to load Ably SDK"); };
     document.head.appendChild(s);
@@ -575,7 +575,7 @@ function connectAbly(apiKey, room) {
 function _doConnect(apiKey, room) {
   try {
     if (ablyClient) { ablyClient.close(); }
-    ablyClient = new Ably.Realtime({ key: apiKey, recover: true });
+    ablyClient = new Ably.Realtime({ key: apiKey.trim() });
 
     ablyClient.connection.on("connected", () => {
       setChip("connected", "Live: " + room);

@@ -643,7 +643,7 @@ function autoReconnect() {
       return;
     }
   } catch(e) {}
-  if (params.get("room")) toast("ℹ Room in URL — click 🔗 Go Live to connect with your Ably key");
+  if (params.get("room")) safeToast("ℹ Room in URL — click 🔗 Go Live to connect with your Ably key");
 }
 
 function setChip(state, label) {

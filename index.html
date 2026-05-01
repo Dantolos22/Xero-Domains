@@ -535,7 +535,13 @@ function saveLocal() {
   try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e){}
 }
 function loadLocal() {
-  try { const d = localStorage.getItem(LS_KEY); if (d) S = JSON.parse(d); } catch(e){}
+  try {
+    const d = localStorage.getItem(LS_KEY);
+    if (d) {
+      const p = JSON.parse(d);
+      if (p && p.sections && Array.isArray(p.sections) && p.sections.length > 0) S = p;
+    }
+  } catch(e) {}
 }
 
 // ═══════════════════════════════════════════════════════════

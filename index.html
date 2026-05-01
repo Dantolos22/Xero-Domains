@@ -362,7 +362,7 @@
 // ═══════════════════════════════════════════════════════════
 // HARD-CODED CONFIG — set these for permanent team deployment
 // ═══════════════════════════════════════════════════════════
-const HARDCODED_ABLY_KEY  = "-Zc5SA.0bw3DQ:CWzLKoQ7Z30ChZ390idjKB57M8jpupkRO65mzF70NWY";
+const HARDCODED_ABLY_KEY  = "Zc5SA.0bw3DQ:CWzLKoQ7Z30ChZ390idjKB57M8jpupkRO65mzF70NWY";
 const HARDCODED_ROOM      = "AAA Domains";
 
 // ═══════════════════════════════════════════════════════════
@@ -544,6 +544,18 @@ function loadLocal() {
 let ablyClient = null, ablyChannel = null, ablyRoom = null;
 let ablyBusy = false, ablyPushTimer = null;
 
+// Safe toast — works even before window assignments run
+function safeToast(msg) {
+  try { toast(msg); } catch(e) {
+    const w = document.getElementById("toastWrap");
+    if (!w) return;
+    const t = document.createElement("div");
+    t.className = "toast"; t.textContent = msg;
+    w.appendChild(t);
+    setTimeout(() => { t.style.opacity="0"; t.style.transition="opacity .3s"; setTimeout(()=>t.remove(),300); }, 2800);
+  }
+}
+
 function connectAbly(apiKey, room) {
   ablyRoom = room;
   setChip("connecting", "Connecting…");
@@ -553,7 +565,7 @@ function connectAbly(apiKey, room) {
     const s = document.createElement("script");
     s.src = "https://cdn.ably.com/lib/ably.min-1.js";
     s.onload = () => _doConnect(apiKey, room);
-    s.onerror = () => { setChip("", "Offline"); toast("❌ Failed to load Ably SDK"); };
+    s.onerror = () => { setChip("", "Offline"); safeToast("❌ Failed to load Ably SDK"); };
     document.head.appendChild(s);
   } else {
     _doConnect(apiKey, room);
@@ -567,11 +579,11 @@ function _doConnect(apiKey, room) {
 
     ablyClient.connection.on("connected", () => {
       setChip("connected", "Live: " + room);
-      toast("🟢 Connected — " + room);
+      safeToast("🟢 Connected — " + room);
       document.getElementById("shareBtn").style.display = "";
     });
     ablyClient.connection.on("disconnected", () => setChip("connecting", "Reconnecting…"));
-    ablyClient.connection.on("failed", () => { setChip("", "Offline"); toast("❌ Ably connection failed"); });
+    ablyClient.connection.on("failed", () => { setChip("", "Offline"); safeToast("❌ Ably connection failed — check your API key"); });
 
     // Channel with rewind:1 — new joiners get the last published state immediately
     ablyChannel = ablyClient.channels.get("taxonomy:" + room, {
@@ -607,7 +619,7 @@ function ablyPush() {
   ablyPushTimer = setTimeout(() => {
     ablyBusy = true;
     ablyChannel.publish("update", clone(S))
-      .catch(e => toast("Sync error: " + e.message))
+      .catch(e => safeToast("Sync error: " + e.message))
       .finally(() => setTimeout(() => ablyBusy = false, 80));
   }, 60);
 }

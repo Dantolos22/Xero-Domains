@@ -614,7 +614,7 @@ function _doConnect(apiKey, room) {
 
   } catch(err) {
     setChip("", "Offline");
-    toast("❌ " + err.message);
+    safeToast("❌ " + err.message);
   }
 }
 

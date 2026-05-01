@@ -601,7 +601,6 @@ function _doConnect(apiKey, room) {
       const data = msg.data;
       // Ignore empty or invalid messages
       if (!data || !data.sections || !Array.isArray(data.sections) || data.sections.length === 0) return;
-      gotInitialSync = true;
       ablyBusy = true;
       S = data;
       render(); saveLocal();
@@ -613,12 +612,7 @@ function _doConnect(apiKey, room) {
       localStorage.setItem(LS_KEY + "-ably", JSON.stringify({ apiKey, room }));
     } catch(e) {}
 
-    // If channel has no recent state, re-seed from our localStorage after 3s
-    let gotInitialSync = false;
-    const origSub = ablyChannel.subscribe.bind(ablyChannel);
-    setTimeout(() => {
-      if (!gotInitialSync && ablyChannel) { ablyPush(); }
-    }, 3000);
+
 
   } catch(err) {
     setChip("", "Offline");

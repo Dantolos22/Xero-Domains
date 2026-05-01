@@ -41,9 +41,18 @@
 
   .section { display: flex; flex-direction: column; gap: 6px; }
   .section-header { display: flex; align-items: center; gap: 8px; padding: 0 4px 4px; }
-  .section-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-light); }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-light); cursor: pointer; border-radius: 3px; padding: 1px 4px; }
+  .section-label:hover { background: var(--grey); color: var(--text); }
+  .section-label-input { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text); border: 1px solid var(--blue); border-radius: 3px; padding: 1px 4px; background: white; outline: none; width: 180px; }
+  .section-btn { cursor: pointer; border: none; background: transparent; color: var(--text-light); font-size: 11px; padding: 1px 4px; border-radius: 3px; line-height: 1; opacity: 0; transition: opacity .15s; display: flex; align-items: center; }
+  .section-header:hover .section-btn { opacity: 1; }
+  .section-btn:hover { background: var(--grey); color: var(--text); }
+  .section-btn.del:hover { color: var(--red); }
   .section-line { flex: 1; height: 1px; background: var(--grey-border); }
   .section-groups { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+  .add-section-wrap { padding: 4px 24px 20px; }
+  .add-section-btn { cursor: pointer; border: 1px dashed var(--grey-border); background: transparent; color: var(--text-light); font-size: 12px; font-weight: 600; padding: 7px 16px; border-radius: var(--radius-sm); transition: all .15s; }
+  .add-section-btn:hover { background: white; color: var(--blue); border-color: var(--blue); }
 
   .group { background: white; border-radius: var(--radius); border: 1px solid var(--grey-border); box-shadow: var(--shadow); width: 210px; flex-shrink: 0; display: flex; flex-direction: column; transition: box-shadow .15s, border-color .15s; }
   .group.oos { opacity: .55; border-color: #d0d5de; }
@@ -418,7 +427,26 @@ function render() {
     secEl.className = "section"; secEl.dataset.sid = sec.id;
     const hdr = document.createElement("div");
     hdr.className = "section-header";
-    hdr.innerHTML = `<span class="section-line"></span><span class="section-label">${esc(sec.label)}</span><span class="section-line"></span>`;
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "section-label"; labelSpan.title = "Double-click to rename";
+    labelSpan.textContent = sec.label;
+    labelSpan.ondblclick = () => startRenameSection(sec.id, labelSpan);
+    const delBtn = document.createElement("button");
+    delBtn.className = "section-btn del"; delBtn.title = "Delete section";
+    delBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    delBtn.onclick = () => deleteSection(sec.id);
+    hdr.innerHTML = `<span class="section-line"></span>`;
+    hdr.appendChild(labelSpan);
+    hdr.appendChild(delBtn);
+    hdr.innerHTML += `<span class="section-line"></span>`;
+    // Re-attach dynamic elements after innerHTML reset
+    hdr.querySelector(".section-line:first-child"); // noop
+    hdr.insertBefore(document.createTextNode(""), hdr.firstChild); // noop
+    // Rebuild cleanly
+    hdr.textContent = "";
+    const line1 = document.createElement("span"); line1.className = "section-line";
+    const line2 = document.createElement("span"); line2.className = "section-line";
+    hdr.appendChild(line1); hdr.appendChild(labelSpan); hdr.appendChild(delBtn); hdr.appendChild(line2);
     secEl.appendChild(hdr);
     const row = document.createElement("div");
     row.className = "section-groups"; row.dataset.sid = sec.id;
@@ -443,6 +471,16 @@ function render() {
     });
     sortableInstances.push(so);
   });
+
+  // Add Section button at the bottom
+  const addSecWrap = document.createElement("div");
+  addSecWrap.className = "add-section-wrap";
+  const addSecBtn = document.createElement("button");
+  addSecBtn.className = "add-section-btn";
+  addSecBtn.textContent = "+ Add Section";
+  addSecBtn.onclick = () => addSection();
+  addSecWrap.appendChild(addSecBtn);
+  board.appendChild(addSecWrap);
 }
 
 function buildGroup(grp, sid) {
@@ -454,7 +492,10 @@ function buildGroup(grp, sid) {
     <span class="drag-handle group-drag" title="Drag group">⠿</span>
     <div class="group-name-wrap"><span class="group-name" title="Double-click to rename">${esc(grp.name)}</span></div>
     <div class="group-actions">
-      <button class="icon-btn" title="${grp.oos?"Mark In Scope":"Mark Out of Scope"}" onclick="toggleGroupOos('${grp.id}')">${grp.oos?"🔕":"🔔"}</button>
+      <button class="icon-btn" title="${grp.oos?"Mark In Scope":"Mark Out of Scope"}" onclick="toggleGroupOos('${grp.id}')">${grp.oos?
+        `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>` :
+        `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+      }</button>
       <button class="icon-btn red" title="Delete group" onclick="deleteGroup('${sid}','${grp.id}')">✕</button>
     </div>`;
   hdr.querySelector(".group-name").ondblclick = () => startRenameGroup(grp.id, hdr.querySelector(".group-name"));
@@ -526,6 +567,26 @@ function startRenameDomain(did, gid, span) {
   inp.onkeydown = e => { if(e.key==="Enter") inp.blur(); if(e.key==="Escape") render(); };
 }
 
+function startRenameSection(sid, span) {
+  const inp = document.createElement("input");
+  inp.className = "section-label-input"; inp.value = span.textContent;
+  span.replaceWith(inp); inp.focus(); inp.select();
+  const commit = () => { const v=inp.value.trim(); if(v){pushU();const sec=S.sections.find(s=>s.id===sid);if(sec){sec.label=v;saveLocal();sbPush();}} render(); };
+  inp.onblur = commit;
+  inp.onkeydown = e => { if(e.key==="Enter") inp.blur(); if(e.key==="Escape") render(); };
+}
+function addSection() {
+  const name = prompt("New section name:"); if (!name||!name.trim()) return;
+  pushU(); S.sections.push({id:genId(), label:name.trim().toUpperCase(), groups:[]});
+  saveLocal(); sbPush(); render();
+}
+function deleteSection(sid) {
+  const sec = S.sections.find(s=>s.id===sid);
+  if (!sec) return;
+  if (sec.groups.length > 0 && !confirm(`Delete "${sec.label}" and all its groups?`)) return;
+  pushU(); S.sections = S.sections.filter(s=>s.id!==sid);
+  saveLocal(); sbPush(); render();
+}
 function addGroup(sid) {
   const name = prompt("New group name:"); if (!name||!name.trim()) return;
   pushU(); S.sections.find(s=>s.id===sid).groups.push({id:genId(),name:name.trim(),oos:false,domains:[]});
@@ -601,7 +662,8 @@ document.querySelectorAll(".overlay").forEach(el => {
 Object.assign(window, {
   toast, doUndo, doRedo, openConnectModal, connectFromModal, closeModal,
   shareUrl, copyShareUrl, exportJSON, importJSON, resetToDefault,
-  addGroup, deleteGroup, toggleGroupOos, addDomain, deleteDomain
+  addGroup, deleteGroup, toggleGroupOos, addDomain, deleteDomain,
+  startRenameSection, addSection, deleteSection
 });
 
 // ═══════════════════════════════════════════════════════

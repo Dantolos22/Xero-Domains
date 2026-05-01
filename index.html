@@ -121,6 +121,33 @@
   .toast-wrap { position: fixed; bottom: 20px; right: 20px; z-index: 300; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
   .toast { background: var(--text); color: white; font-size: 12px; font-weight: 500; padding: 8px 14px; border-radius: var(--radius); box-shadow: var(--shadow-lg); animation: toastIn .2s ease; max-width: 300px; }
   @keyframes toastIn { from { opacity:0; transform: translateY(6px); } }
+
+  /* ── SIDEBAR ── */
+  .sidebar { position: fixed; left: 0; top: 52px; bottom: 0; width: 248px; background: white; border-right: 1px solid var(--grey-border); display: flex; flex-direction: column; transform: translateX(-248px); transition: transform .22s ease; z-index: 50; box-shadow: 3px 0 12px rgba(0,0,0,.07); }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-hdr { padding: 14px 16px 12px; border-bottom: 1px solid var(--grey-border); display: flex; align-items: center; justify-content: space-between; }
+  .sidebar-title { font-size: 12px; font-weight: 700; color: var(--text); letter-spacing: .03em; }
+  .sidebar-close { cursor: pointer; border: none; background: transparent; color: var(--text-light); font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 3px; }
+  .sidebar-close:hover { background: var(--grey); color: var(--text); }
+  .sidebar-body { flex: 1; overflow-y: auto; }
+  .sidebar-empty { padding: 28px 16px; text-align: center; color: var(--text-light); font-size: 12px; line-height: 1.6; }
+  .sidebar-ftr { padding: 12px 14px; border-top: 1px solid var(--grey-border); display: flex; flex-direction: column; gap: 6px; }
+  .v-item { padding: 11px 14px; border-bottom: 1px solid var(--grey-border); transition: background .12s; }
+  .v-item:hover { background: var(--grey); }
+  .v-item:last-child { border-bottom: none; }
+  .v-num { font-size: 9px; font-weight: 700; letter-spacing: .06em; color: var(--text-light); text-transform: uppercase; margin-bottom: 2px; }
+  .v-name { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .v-meta { font-size: 10px; color: var(--text-light); margin-bottom: 7px; }
+  .v-btns { display: flex; gap: 6px; }
+  .v-btn { cursor: pointer; border: 1px solid var(--grey-border); background: white; color: var(--text-light); font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 3px; }
+  .v-btn:hover { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+  .v-btn.danger:hover { background: #fee2e2; border-color: var(--red); color: var(--red); }
+  .btn-versions { position: relative; }
+  .v-badge { position: absolute; top: -4px; right: -4px; background: var(--blue); color: white; font-size: 9px; font-weight: 700; border-radius: 10px; padding: 1px 5px; line-height: 1.4; }
+  body.sidebar-open .toolbar,
+  body.sidebar-open .board { margin-left: 248px; transition: margin-left .22s ease; }
+  body:not(.sidebar-open) .toolbar,
+  body:not(.sidebar-open) .board { margin-left: 0; transition: margin-left .22s ease; }
 </style>
 </head>
 <body>
@@ -134,6 +161,9 @@
 </header>
 
 <div class="toolbar">
+  <button class="btn btn-ghost btn-versions" id="versionsToggleBtn" onclick="toggleSidebar()" title="Version history">🕐 Versions <span class="v-badge" id="vBadge" style="display:none">0</span></button>
+  <button class="btn btn-ghost" onclick="saveVersion()" title="Save a named snapshot">💾 Save Version</button>
+  <div class="sep"></div>
   <button class="btn btn-ghost" onclick="doUndo()">↩ Undo</button>
   <button class="btn btn-ghost" onclick="doRedo()">↪ Redo</button>
   <div class="sep"></div>
@@ -143,6 +173,19 @@
   <button class="btn btn-ghost" onclick="exportJSON()">⬇ Export JSON</button>
   <button class="btn btn-ghost" onclick="importJSON()">⬆ Import JSON</button>
   <div class="sep"></div>
+</div>
+
+<!-- VERSION HISTORY SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-hdr">
+    <span class="sidebar-title">🕐 Version History</span>
+    <button class="sidebar-close" onclick="toggleSidebar()" title="Close">✕</button>
+  </div>
+  <div class="sidebar-body" id="sidebarBody"></div>
+  <div class="sidebar-ftr">
+    <button class="btn btn-primary" onclick="saveVersion()" style="width:100%;justify-content:center">💾 Save Version</button>
+    <p style="font-size:10px;color:var(--text-light);text-align:center;margin:0">Versions are shared with your team</p>
+  </div>
 </div>
 
 <div class="board" id="board"></div>
@@ -192,6 +235,7 @@ const HARDCODED_ROOM    = "aaa-domains";
 // DEFAULT STATE
 // ═══════════════════════════════════════════════════════
 const DEFAULT_STATE = {
+  versions: [],
   sections: [
     {
       id: "s1", label: "CUSTOMER-FACING",
@@ -419,8 +463,10 @@ let sortableInstances = [];
 function render() {
   sortableInstances.forEach(s => { try { s.destroy(); } catch(e){} });
   sortableInstances = [];
+  S.versions = S.versions || [];
   const board = document.getElementById("board");
   board.innerHTML = "";
+  renderSidebar();
 
   S.sections.forEach(sec => {
     const secEl = document.createElement("div");
@@ -611,6 +657,63 @@ function deleteDomain(gid, did) {
   saveLocal(); sbPush(); render();
 }
 
+// ── VERSION HISTORY ────────────────────────────────────────────────────
+function toggleSidebar() {
+  document.body.classList.toggle("sidebar-open");
+  document.getElementById("sidebar").classList.toggle("open");
+}
+function renderSidebar() {
+  const body = document.getElementById("sidebarBody");
+  const badge = document.getElementById("vBadge");
+  if (!body) return;
+  const vs = S.versions || [];
+  if (badge) { badge.textContent = vs.length; badge.style.display = vs.length ? "" : "none"; }
+  if (vs.length === 0) {
+    body.innerHTML = `<div class="sidebar-empty">No saved versions yet.<br><br>Click <strong>💾 Save Version</strong> to snapshot the current state of the board.<br><br>Your team can then restore any version at any time.</div>`;
+    return;
+  }
+  body.innerHTML = vs.map((v, i) => {
+    const d = new Date(v.timestamp);
+    const dateStr = d.toLocaleDateString("en-AU", {day:"numeric", month:"short", year:"numeric"});
+    const timeStr = d.toLocaleTimeString("en-AU", {hour:"2-digit", minute:"2-digit"});
+    const num = vs.length - i;
+    return `<div class="v-item">
+      <div class="v-num">Version ${num}</div>
+      <div class="v-name">${esc(v.name)}</div>
+      <div class="v-meta">${dateStr} · ${timeStr}</div>
+      <div class="v-btns">
+        <button class="v-btn" onclick="restoreVersion('${v.id}')">↩ Restore</button>
+        <button class="v-btn danger" onclick="deleteVersion('${v.id}')">✕ Delete</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+function saveVersion() {
+  const name = prompt("Name this version (e.g. 'Before Q3 review', 'Draft v2'):"); if (!name||!name.trim()) return;
+  S.versions = S.versions || [];
+  S.versions.unshift({ id: genId(), name: name.trim(), timestamp: Date.now(), snapshot: { sections: clone(S.sections) } });
+  if (S.versions.length > 30) S.versions = S.versions.slice(0, 30);
+  saveLocal(); sbPush(); renderSidebar();
+  // Open sidebar so they see it
+  document.body.classList.add("sidebar-open");
+  document.getElementById("sidebar").classList.add("open");
+  toast("💾 Version saved: " + name.trim());
+}
+function restoreVersion(vid) {
+  const v = (S.versions||[]).find(v=>v.id===vid); if (!v) return;
+  if (!confirm(`Restore "${v.name}"?\n\nYour current layout will be overwritten. You can undo with Ctrl+Z.`)) return;
+  pushU(); S.sections = clone(v.snapshot.sections);
+  saveLocal(); sbPush(); render();
+  toast("↩ Restored: " + v.name);
+}
+function deleteVersion(vid) {
+  const v = (S.versions||[]).find(v=>v.id===vid); if (!v) return;
+  if (!confirm(`Delete version "${v.name}"? This can't be undone.`)) return;
+  S.versions = S.versions.filter(v=>v.id!==vid);
+  saveLocal(); sbPush(); renderSidebar();
+  toast("🗑 Version deleted");
+}
+
 function findGroup(gid) { for (const s of S.sections) for (const g of s.groups) if (g.id===gid) return g; return null; }
 function findDomain(gid,did) { const g=findGroup(gid); return g?g.domains.find(d=>d.id===did):null; }
 function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
@@ -663,7 +766,8 @@ Object.assign(window, {
   toast, doUndo, doRedo, openConnectModal, connectFromModal, closeModal,
   shareUrl, copyShareUrl, exportJSON, importJSON, resetToDefault,
   addGroup, deleteGroup, toggleGroupOos, addDomain, deleteDomain,
-  startRenameSection, addSection, deleteSection
+  startRenameSection, addSection, deleteSection,
+  toggleSidebar, saveVersion, restoreVersion, deleteVersion
 });
 
 // ═══════════════════════════════════════════════════════

@@ -970,8 +970,9 @@ Object.assign(window, {
 // ═══════════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════════
-loadLocal();
-render();
+try { loadLocal(); } catch(e) {}
+if (!S || !S.sections || !Array.isArray(S.sections) || S.sections.length === 0) S = clone(DEFAULT_STATE);
+try { render(); } catch(e) { console.error('render error:', e); S = clone(DEFAULT_STATE); render(); }
 autoReconnect();
 </script>
 </body>

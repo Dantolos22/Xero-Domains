@@ -7,167 +7,69 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --blue: #13b5ea;
-    --blue-light: #e8f8fd;
-    --blue-mid: #b3e8f8;
-    --grey: #f4f5f7;
-    --grey-border: #dde1e7;
-    --text: #1a1a2e;
-    --text-light: #5e6c84;
-    --oos: #b0b8c9;
-    --oos-bg: #f0f1f4;
-    --amber: #f59e0b;
-    --amber-bg: #fef3c7;
-    --red: #ef4444;
-    --green: #22c55e;
+    --blue: #13b5ea; --blue-light: #e8f8fd; --blue-mid: #b3e8f8;
+    --grey: #f4f5f7; --grey-border: #dde1e7; --text: #1a1a2e;
+    --text-light: #5e6c84; --oos: #b0b8c9; --oos-bg: #f0f1f4;
+    --amber: #f59e0b; --amber-bg: #fef3c7; --red: #ef4444;
     --shadow: 0 1px 3px rgba(0,0,0,.10), 0 1px 2px rgba(0,0,0,.06);
     --shadow-lg: 0 4px 12px rgba(0,0,0,.12);
-    --radius: 8px;
-    --radius-sm: 5px;
+    --radius: 8px; --radius-sm: 5px;
   }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #eef0f4; color: var(--text); min-height: 100vh; }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #eef0f4;
-    color: var(--text);
-    min-height: 100vh;
-  }
-
-  /* ── HEADER ── */
-  header {
-    background: white;
-    border-bottom: 1px solid var(--grey-border);
-    padding: 0 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    height: 52px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: var(--shadow);
-  }
+  header { background: white; border-bottom: 1px solid var(--grey-border); padding: 0 20px; display: flex; align-items: center; gap: 12px; height: 52px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
   header .logo { font-weight: 700; font-size: 16px; color: var(--blue); letter-spacing: -.3px; }
   header .sep { color: var(--grey-border); }
-  header .title { font-size: 14px; font-weight: 600; color: var(--text); }
+  header .title { font-size: 14px; font-weight: 600; }
   header .spacer { flex: 1; }
-  header .chip {
-    font-size: 11px; padding: 3px 8px; border-radius: 20px;
-    background: var(--grey); color: var(--text-light); font-weight: 500;
-    border: 1px solid var(--grey-border);
-  }
+  header .chip { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: var(--grey); color: var(--text-light); font-weight: 500; border: 1px solid var(--grey-border); }
   header .chip.connected { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
   header .chip.connecting { background: #fef9c3; color: #854d0e; border-color: #fde68a; }
 
-  .btn {
-    cursor: pointer; border: none; border-radius: var(--radius-sm);
-    font-size: 12px; font-weight: 600; padding: 5px 10px;
-    transition: background .15s, opacity .15s;
-  }
+  .btn { cursor: pointer; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; padding: 5px 10px; transition: background .15s; }
   .btn:active { opacity: .8; }
   .btn-ghost { background: transparent; color: var(--text-light); border: 1px solid var(--grey-border); }
   .btn-ghost:hover { background: var(--grey); }
   .btn-primary { background: var(--blue); color: white; }
   .btn-primary:hover { background: #0fa3d4; }
 
-  /* ── TOOLBAR ── */
-  .toolbar {
-    padding: 10px 20px;
-    display: flex; gap: 8px; align-items: center;
-    flex-wrap: wrap;
-    background: white;
-    border-bottom: 1px solid var(--grey-border);
-  }
+  .toolbar { padding: 10px 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: white; border-bottom: 1px solid var(--grey-border); }
   .toolbar .sep { width: 1px; height: 20px; background: var(--grey-border); margin: 0 2px; }
 
-  /* ── BOARD ── */
   .board { padding: 20px; display: flex; flex-direction: column; gap: 24px; }
 
-  /* ── SECTION ── */
   .section { display: flex; flex-direction: column; gap: 6px; }
-  .section-header {
-    display: flex; align-items: center; gap: 8px; padding: 0 4px 4px;
-  }
-  .section-label {
-    font-size: 10px; font-weight: 700; letter-spacing: .08em;
-    text-transform: uppercase; color: var(--text-light);
-  }
+  .section-header { display: flex; align-items: center; gap: 8px; padding: 0 4px 4px; }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-light); }
   .section-line { flex: 1; height: 1px; background: var(--grey-border); }
   .section-groups { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
 
-  /* ── GROUP ── */
-  .group {
-    background: white;
-    border-radius: var(--radius);
-    border: 1px solid var(--grey-border);
-    box-shadow: var(--shadow);
-    width: 210px;
-    flex-shrink: 0;
-    display: flex; flex-direction: column;
-    transition: box-shadow .15s, border-color .15s;
-  }
+  .group { background: white; border-radius: var(--radius); border: 1px solid var(--grey-border); box-shadow: var(--shadow); width: 210px; flex-shrink: 0; display: flex; flex-direction: column; transition: box-shadow .15s, border-color .15s; }
   .group.oos { opacity: .55; border-color: #d0d5de; }
   .group.sortable-chosen { box-shadow: var(--shadow-lg); border-color: var(--blue); }
   .group.sortable-ghost { opacity: .4; }
 
-  .group-header {
-    display: flex; align-items: center; gap: 6px;
-    padding: 9px 10px 8px;
-    border-bottom: 2px solid var(--blue-mid);
-    user-select: none;
-  }
+  .group-header { display: flex; align-items: center; gap: 6px; padding: 9px 10px 8px; border-bottom: 2px solid var(--blue-mid); user-select: none; }
   .group.oos .group-header { border-bottom-color: var(--oos); }
 
-  .drag-handle {
-    cursor: grab; color: var(--text-light); font-size: 14px; line-height: 1;
-    padding: 1px 2px; border-radius: 3px; flex-shrink: 0;
-  }
+  .drag-handle { cursor: grab; color: var(--text-light); font-size: 14px; line-height: 1; padding: 1px 2px; border-radius: 3px; flex-shrink: 0; }
   .drag-handle:hover { background: var(--grey); }
   .drag-handle:active { cursor: grabbing; }
 
   .group-name-wrap { flex: 1; min-width: 0; }
-  .group-name {
-    font-size: 12px; font-weight: 700; color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    cursor: pointer;
-  }
+  .group-name { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
   .group-name:hover { color: var(--blue); }
-  .group-name-input {
-    font-size: 12px; font-weight: 700; width: 100%;
-    border: 1px solid var(--blue); border-radius: 3px;
-    padding: 1px 4px; outline: none;
-  }
+  .group-name-input { font-size: 12px; font-weight: 700; width: 100%; border: 1px solid var(--blue); border-radius: 3px; padding: 1px 4px; outline: none; }
 
   .group-actions { display: flex; gap: 2px; }
-  .icon-btn {
-    cursor: pointer; border: none; background: transparent;
-    color: var(--text-light); font-size: 13px; padding: 2px 4px;
-    border-radius: 3px; line-height: 1;
-  }
+  .icon-btn { cursor: pointer; border: none; background: transparent; color: var(--text-light); font-size: 13px; padding: 2px 4px; border-radius: 3px; line-height: 1; }
   .icon-btn:hover { background: var(--grey); color: var(--text); }
   .icon-btn.red:hover { background: #fee2e2; color: var(--red); }
 
-  /* ── DOMAIN LIST ── */
-  .domain-list {
-    padding: 6px 8px;
-    display: flex; flex-direction: column; gap: 3px;
-    min-height: 32px;
-  }
+  .domain-list { padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; min-height: 32px; }
 
-  /* ── DOMAIN CHIP ── */
-  .domain {
-    display: flex; align-items: center; gap: 5px;
-    background: var(--blue-light);
-    border: 1px solid var(--blue-mid);
-    border-radius: var(--radius-sm);
-    padding: 4px 7px;
-    cursor: grab;
-    transition: box-shadow .1s, background .1s;
-    user-select: none;
-    min-height: 28px;
-  }
+  .domain { display: flex; align-items: center; gap: 5px; background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius-sm); padding: 4px 7px; cursor: grab; transition: box-shadow .1s, background .1s; user-select: none; min-height: 28px; }
   .domain:hover { box-shadow: 0 1px 4px rgba(19,181,234,.25); }
   .domain:active { cursor: grabbing; }
   .domain.oos { background: var(--oos-bg); border-color: #d0d5de; }
@@ -175,119 +77,45 @@
   .domain.sortable-chosen { box-shadow: 0 2px 8px rgba(19,181,234,.4); background: var(--blue); }
   .domain.sortable-chosen .domain-name { color: white; }
 
-  .domain-name {
-    font-size: 11px; font-weight: 500; flex: 1; color: var(--text);
-    cursor: pointer;
-  }
+  .domain-name { font-size: 11px; font-weight: 500; flex: 1; color: var(--text); cursor: pointer; }
   .domain.oos .domain-name { color: var(--oos); }
   .domain-name:hover { color: var(--blue); }
-  .domain-name-input {
-    font-size: 11px; font-weight: 500; flex: 1;
-    border: 1px solid var(--blue); border-radius: 3px;
-    padding: 1px 4px; outline: none;
-  }
+  .domain-name-input { font-size: 11px; font-weight: 500; flex: 1; border: 1px solid var(--blue); border-radius: 3px; padding: 1px 4px; outline: none; }
 
-  .flag {
-    font-size: 9px; font-weight: 700; padding: 1px 4px;
-    border-radius: 3px; letter-spacing: .02em; flex-shrink: 0;
-  }
+  .flag { font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; letter-spacing: .02em; flex-shrink: 0; }
   .flag-la { background: var(--amber-bg); color: #92400e; border: 1px solid #fde68a; }
   .flag-oos { background: var(--oos-bg); color: #64748b; border: 1px solid #cbd5e1; font-style: italic; }
 
-  .domain-del {
-    cursor: pointer; color: #ccc; font-size: 13px; flex-shrink: 0;
-    line-height: 1; border-radius: 2px; padding: 0 1px;
-  }
+  .domain-del { cursor: pointer; color: #ccc; font-size: 13px; flex-shrink: 0; line-height: 1; border-radius: 2px; padding: 0 1px; }
   .domain-del:hover { color: var(--red); background: #fee2e2; }
 
-  /* ── ADD DOMAIN ── */
-  .add-domain {
-    padding: 4px 8px 8px;
-    display: flex; gap: 4px;
-  }
-  .add-domain-input {
-    flex: 1; font-size: 11px; border: 1px solid var(--grey-border);
-    border-radius: var(--radius-sm); padding: 4px 6px; outline: none;
-    transition: border-color .15s;
-  }
+  .add-domain { padding: 4px 8px 8px; display: flex; gap: 4px; }
+  .add-domain-input { flex: 1; font-size: 11px; border: 1px solid var(--grey-border); border-radius: var(--radius-sm); padding: 4px 6px; outline: none; transition: border-color .15s; }
   .add-domain-input:focus { border-color: var(--blue); }
-  .add-domain-btn {
-    font-size: 16px; line-height: 1; cursor: pointer;
-    border: none; background: var(--blue-light); color: var(--blue);
-    border-radius: var(--radius-sm); padding: 2px 7px; font-weight: 700;
-  }
+  .add-domain-btn { font-size: 16px; line-height: 1; cursor: pointer; border: none; background: var(--blue-light); color: var(--blue); border-radius: var(--radius-sm); padding: 2px 7px; font-weight: 700; }
   .add-domain-btn:hover { background: var(--blue); color: white; }
 
-  /* ── ADD GROUP BTN ── */
-  .add-group {
-    width: 210px; height: 44px; border-radius: var(--radius);
-    border: 2px dashed var(--grey-border); background: transparent;
-    cursor: pointer; font-size: 12px; color: var(--text-light);
-    font-weight: 600; transition: border-color .15s, color .15s;
-    display: flex; align-items: center; justify-content: center; gap: 5px;
-    flex-shrink: 0;
-  }
+  .add-group { width: 210px; height: 44px; border-radius: var(--radius); border: 2px dashed var(--grey-border); background: transparent; cursor: pointer; font-size: 12px; color: var(--text-light); font-weight: 600; transition: border-color .15s, color .15s; display: flex; align-items: center; justify-content: center; gap: 5px; flex-shrink: 0; }
   .add-group:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
 
-  /* ── MODAL ── */
-  .overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,.4); z-index: 200;
-    align-items: center; justify-content: center;
-  }
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; align-items: center; justify-content: center; }
   .overlay.open { display: flex; }
-  .modal {
-    background: white; border-radius: 12px; padding: 24px;
-    width: 400px; box-shadow: var(--shadow-lg);
-    display: flex; flex-direction: column; gap: 14px;
-  }
+  .modal { background: white; border-radius: 12px; padding: 24px; width: 400px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; gap: 14px; }
   .modal h2 { font-size: 16px; font-weight: 700; }
   .modal p { font-size: 13px; color: var(--text-light); line-height: 1.5; }
   .modal label { font-size: 12px; font-weight: 600; }
-  .modal input {
-    width: 100%; padding: 8px 10px;
-    border: 1px solid var(--grey-border); border-radius: var(--radius-sm);
-    font-size: 13px; outline: none;
-  }
+  .modal input { width: 100%; padding: 8px 10px; border: 1px solid var(--grey-border); border-radius: var(--radius-sm); font-size: 13px; outline: none; }
   .modal input:focus { border-color: var(--blue); }
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-  .modal-code {
-    background: var(--grey); font-size: 12px; font-family: monospace;
-    user-select: all; cursor: text; color: var(--text);
-    border: 1px solid var(--grey-border);
-    padding: 8px 10px; border-radius: var(--radius-sm);
-    word-break: break-all;
-  }
-  .modal-steps { display: flex; flex-direction: column; gap: 6px; }
-  .modal-step {
-    display: flex; gap: 10px; align-items: flex-start;
-    font-size: 12px; color: var(--text-light); line-height: 1.5;
-  }
-  .modal-step .num {
-    background: var(--blue); color: white; border-radius: 50%;
-    width: 18px; height: 18px; display: flex; align-items: center;
-    justify-content: center; font-size: 10px; font-weight: 700;
-    flex-shrink: 0; margin-top: 1px;
-  }
-  .modal-step a { color: var(--blue); }
+  .modal-code { background: var(--grey); font-size: 12px; font-family: monospace; user-select: all; color: var(--text); border: 1px solid var(--grey-border); padding: 8px 10px; border-radius: var(--radius-sm); word-break: break-all; }
 
-  /* ── TOAST ── */
-  .toast-wrap {
-    position: fixed; bottom: 20px; right: 20px; z-index: 300;
-    display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
-  }
-  .toast {
-    background: var(--text); color: white; font-size: 12px; font-weight: 500;
-    padding: 8px 14px; border-radius: var(--radius);
-    box-shadow: var(--shadow-lg); animation: toastIn .2s ease;
-    max-width: 300px;
-  }
+  .toast-wrap { position: fixed; bottom: 20px; right: 20px; z-index: 300; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  .toast { background: var(--text); color: white; font-size: 12px; font-weight: 500; padding: 8px 14px; border-radius: var(--radius); box-shadow: var(--shadow-lg); animation: toastIn .2s ease; max-width: 300px; }
   @keyframes toastIn { from { opacity:0; transform: translateY(6px); } }
 </style>
 </head>
 <body>
 
-<!-- ── HEADER ── -->
 <header>
   <span class="logo">Xero</span>
   <span class="sep">|</span>
@@ -296,10 +124,9 @@
   <span id="syncChip" class="chip">Offline</span>
 </header>
 
-<!-- ── TOOLBAR ── -->
 <div class="toolbar">
-  <button class="btn btn-ghost" onclick="doUndo()" title="Ctrl+Z">↩ Undo</button>
-  <button class="btn btn-ghost" onclick="doRedo()" title="Ctrl+Y">↪ Redo</button>
+  <button class="btn btn-ghost" onclick="doUndo()">↩ Undo</button>
+  <button class="btn btn-ghost" onclick="doRedo()">↪ Redo</button>
   <div class="sep"></div>
   <button class="btn btn-primary" onclick="openConnectModal()">🔗 Go Live</button>
   <button class="btn btn-ghost" id="shareBtn" onclick="shareUrl()" style="display:none">🔀 Share URL</button>
@@ -310,31 +137,19 @@
   <button class="btn btn-ghost" onclick="resetToDefault()">↺ Reset</button>
 </div>
 
-<!-- ── BOARD ── -->
 <div class="board" id="board"></div>
 
-<!-- ── CONNECT MODAL ── -->
+<!-- CONNECT MODAL -->
 <div class="overlay" id="connectOverlay">
   <div class="modal">
-    <h2>🔗 Go Live — Ably Setup</h2>
-    <div class="modal-steps">
-      <div class="modal-step">
-        <span class="num">1</span>
-        <span>Go to <a href="https://ably.com" target="_blank">ably.com</a> → Sign up free (use your Xero email — no Google Cloud needed)</span>
-      </div>
-      <div class="modal-step">
-        <span class="num">2</span>
-        <span>After login: <strong>Create new app</strong> → copy the <strong>API Key</strong> from the dashboard</span>
-      </div>
-      <div class="modal-step">
-        <span class="num">3</span>
-        <span>Paste it below, pick a room name, click Connect. Share the URL with your team.</span>
-      </div>
-    </div>
-    <label>Ably API Key</label>
-    <input type="text" id="ablyKeyInput" placeholder="xxxxx.yyyyy:zzzzzzzzzzzz" autocomplete="off" />
+    <h2>🔗 Go Live</h2>
+    <p>Enter your Supabase credentials. Anyone with the same URL will see live edits.</p>
+    <label>Supabase URL</label>
+    <input type="text" id="sbUrlInput" placeholder="https://xxxx.supabase.co" autocomplete="off" />
+    <label>Supabase Anon Key</label>
+    <input type="text" id="sbKeyInput" placeholder="sb_publishable_..." autocomplete="off" />
     <label>Room Name</label>
-    <input type="text" id="ablyRoomInput" placeholder="e.g. xero-q2-2026" />
+    <input type="text" id="sbRoomInput" placeholder="e.g. aaa-domains" />
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('connectOverlay')">Cancel</button>
       <button class="btn btn-primary" onclick="connectFromModal()">Connect</button>
@@ -342,11 +157,11 @@
   </div>
 </div>
 
-<!-- ── SHARE MODAL ── -->
+<!-- SHARE MODAL -->
 <div class="overlay" id="shareOverlay">
   <div class="modal">
     <h2>🔀 Share with your team</h2>
-    <p>Anyone opening this link will join the same live room and see all edits in real time.</p>
+    <p>Anyone opening this link joins the same live room instantly.</p>
     <div class="modal-code" id="shareUrlText"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('shareOverlay')">Close</button>
@@ -355,357 +170,276 @@
   </div>
 </div>
 
-<!-- ── TOAST WRAP ── -->
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════
-// HARD-CODED CONFIG — set these for permanent team deployment
-// ═══════════════════════════════════════════════════════════
-const HARDCODED_ABLY_KEY  = "-Zc5SA.0cxWOQ:jkaA55GrrC3ro2HxDDb1C50s1GO35KfxO8-5uH4qfFo";
-const HARDCODED_ROOM      = "AAA Domains";
+// ═══════════════════════════════════════════════════════
+// HARD-CODED CONFIG — edit for team deployment
+// ═══════════════════════════════════════════════════════
+const HARDCODED_SB_URL  = "https://oxqrbrqqzmmizdefzlpw.supabase.co";
+const HARDCODED_SB_KEY  = "sb_publishable_F57Fr8rlXFLWY3mswIJmwA_UzY12APS";
+const HARDCODED_ROOM    = "aaa-domains";
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 // DEFAULT STATE
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 const DEFAULT_STATE = {
   sections: [
     {
-      id: "s1",
-      label: "CUSTOMER-FACING",
+      id: "s1", label: "CUSTOMER-FACING",
       groups: [
-        {
-          id: "g-prod-design", name: "Product & Design", oos: true,
-          domains: [
-            { id: "d1",  name: "Product Discovery & Roadmap", oos: true },
-            { id: "d2",  name: "UX & Experience Design", oos: true },
-            { id: "d3",  name: "Product Feature Delivery", oos: true },
-          ]
-        },
-        {
-          id: "g-eng", name: "Engineering", oos: true,
-          domains: [
-            { id: "d4",  name: "Platform & Infrastructure Ops", oos: true },
-            { id: "d5",  name: "Security & Identity", oos: true },
-            { id: "d6",  name: "Developer Tooling & Quality", oos: true },
-          ]
-        },
-        {
-          id: "g-data", name: "Data & AI", oos: false,
-          domains: [
-            { id: "d7",  name: "Data Engineering & Pipelines" },
-            { id: "d8",  name: "AI & Machine Learning" },
-            { id: "d9",  name: "Data Governance & Quality" },
-          ]
-        },
-        {
-          id: "g-bi", name: "Business Intelligence", oos: false,
-          domains: [
+        { id: "g-prod-design", name: "Product & Design", oos: true, domains: [
+            { id: "d1", name: "Product Discovery & Roadmap", oos: true },
+            { id: "d2", name: "UX & Experience Design", oos: true },
+            { id: "d3", name: "Product Feature Delivery", oos: true }]},
+        { id: "g-eng", name: "Engineering", oos: true, domains: [
+            { id: "d4", name: "Platform & Infrastructure Ops", oos: true },
+            { id: "d5", name: "Security & Identity", oos: true },
+            { id: "d6", name: "Developer Tooling & Quality", oos: true }]},
+        { id: "g-data", name: "Data & AI", oos: false, domains: [
+            { id: "d7", name: "Data Engineering & Pipelines" },
+            { id: "d8", name: "AI & Machine Learning" },
+            { id: "d9", name: "Data Governance & Quality" }]},
+        { id: "g-bi", name: "Business Intelligence", oos: false, domains: [
             { id: "d10", name: "Analytics & Insights" },
             { id: "d11", name: "Reporting & Dashboards" },
-            { id: "d12", name: "Decision Support" },
-          ]
-        },
-        {
-          id: "g-sales", name: "Sales & Partnerships", oos: false,
-          domains: [
+            { id: "d12", name: "Decision Support" }]},
+        { id: "g-sales", name: "Sales & Partnerships", oos: false, domains: [
             { id: "d13", name: "Direct SMB Acquisition" },
             { id: "d14", name: "Accounting Partner Recruitment" },
             { id: "d15", name: "Partner Practice Development" },
             { id: "d16", name: "Enterprise Account Management" },
-            { id: "d17", name: "Revenue Operations & Pricing" },
-          ]
-        },
-        {
-          id: "g-mktg", name: "Marketing & Comms", oos: false,
-          domains: [
+            { id: "d17", name: "Revenue Operations & Pricing" }]},
+        { id: "g-mktg", name: "Marketing & Comms", oos: false, domains: [
             { id: "d18", name: "Brand Strategy & Identity", flags: ["less-automatable"] },
             { id: "d19", name: "Demand Generation & Campaigns" },
             { id: "d20", name: "Content & Creative Production" },
             { id: "d21", name: "Corporate Communications" },
-            { id: "d22", name: "Product Marketing" },
-          ]
-        },
-        {
-          id: "g-cx", name: "Customer Experience", oos: false,
-          domains: [
+            { id: "d22", name: "Product Marketing" }]},
+        { id: "g-cx", name: "Customer Experience", oos: false, domains: [
             { id: "d23", name: "Customer Onboarding" },
             { id: "d24", name: "Customer Support & Education" },
             { id: "d25", name: "Partner & Accountant Support" },
-            { id: "d26", name: "Customer Success & Retention" },
-          ]
-        },
+            { id: "d26", name: "Customer Success & Retention" }]}
       ]
     },
     {
-      id: "s2",
-      label: "ENABLING & BACK OFFICE",
+      id: "s2", label: "ENABLING & BACK OFFICE",
       groups: [
-        {
-          id: "g-people", name: "People (HR)", oos: false,
-          domains: [
+        { id: "g-people", name: "People (HR)", oos: false, domains: [
             { id: "d27", name: "Talent Acquisition" },
             { id: "d28", name: "People Development & Rewards" },
-            { id: "d29", name: "HR Operations & Culture" },
-          ]
-        },
-        {
-          id: "g-finance", name: "Finance", oos: false,
-          domains: [
+            { id: "d29", name: "HR Operations & Culture" }]},
+        { id: "g-finance", name: "Finance", oos: false, domains: [
             { id: "d30", name: "Financial Planning & Forecasting" },
             { id: "d31", name: "Financial Reporting, Tax & Treasury" },
-            { id: "d32", name: "Procurement & Vendor Management" },
-          ]
-        },
-        {
-          id: "g-legal", name: "Legal & Risk", oos: false,
-          domains: [
+            { id: "d32", name: "Procurement & Vendor Management" }]},
+        { id: "g-legal", name: "Legal & Risk", oos: false, domains: [
             { id: "d33", name: "Legal Affairs & Regulatory Engagement" },
-            { id: "d34", name: "Risk & Compliance" },
-          ]
-        },
-        {
-          id: "g-et", name: "Enterprise Technology", oos: false,
-          domains: [
+            { id: "d34", name: "Risk & Compliance" }]},
+        { id: "g-et", name: "Enterprise Technology", oos: false, domains: [
             { id: "d35", name: "IT Infrastructure & Support" },
             { id: "d36", name: "Enterprise Applications (ERP/CRM)" },
-            { id: "d37", name: "Workplace Tools & Productivity" },
-          ]
-        },
-        {
-          id: "g-strategy", name: "Strategy", oos: false,
-          domains: [
+            { id: "d37", name: "Workplace Tools & Productivity" }]},
+        { id: "g-strategy", name: "Strategy", oos: false, domains: [
             { id: "d38", name: "Corporate Strategy & M&A" },
             { id: "d39", name: "Market Intelligence & Research" },
-            { id: "d40", name: "Investor Relations" },
-          ]
-        },
-        {
-          id: "g-intops", name: "Internal Operations", oos: false,
-          domains: [
+            { id: "d40", name: "Investor Relations" }]},
+        { id: "g-intops", name: "Internal Operations", oos: false, domains: [
             { id: "d41", name: "Business Process Improvement" },
             { id: "d42", name: "Project & Programme Management" },
-            { id: "d43", name: "Facilities & Workplace" },
-          ]
-        },
-        {
-          id: "g-regional", name: "Regional & Market Ops", oos: false,
-          domains: [
+            { id: "d43", name: "Facilities & Workplace" }]},
+        { id: "g-regional", name: "Regional & Market Ops", oos: false, domains: [
             { id: "d44", name: "ANZ Market Operations" },
             { id: "d45", name: "UK & Europe Market Operations" },
             { id: "d46", name: "North America Market Operations" },
-            { id: "d47", name: "Rest of World Market Operations" },
-          ]
-        },
+            { id: "d47", name: "Rest of World Market Operations" }]}
       ]
     }
   ]
 };
 
-// ═══════════════════════════════════════════════════════════
-// STATE MANAGEMENT
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
 let S = clone(DEFAULT_STATE);
 let undos = [], redos = [];
 let uid = 0;
-function genId() { return "x" + (++uid) + "_" + Math.random().toString(36).slice(2,7); }
+function genId() { return "x"+(++uid)+"_"+Math.random().toString(36).slice(2,7); }
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function isValidState(o) { return o && o.sections && Array.isArray(o.sections) && o.sections.length > 0; }
 
-function pushU() {
-  undos.push(clone(S));
-  if (undos.length > 80) undos.shift();
-  redos = [];
-}
-function doUndo() {
-  if (!undos.length) return toast("Nothing to undo");
-  redos.push(clone(S)); S = undos.pop();
-  render(); saveLocal(); ablyPush();
-}
-function doRedo() {
-  if (!redos.length) return toast("Nothing to redo");
-  undos.push(clone(S)); S = redos.pop();
-  render(); saveLocal(); ablyPush();
-}
+function pushU() { undos.push(clone(S)); if (undos.length>80) undos.shift(); redos=[]; }
+function doUndo() { if (!undos.length) return toast("Nothing to undo"); redos.push(clone(S)); S=undos.pop(); render(); saveLocal(); sbPush(); }
+function doRedo() { if (!redos.length) return toast("Nothing to redo"); undos.push(clone(S)); S=redos.pop(); render(); saveLocal(); sbPush(); }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 // LOCAL STORAGE
-// ═══════════════════════════════════════════════════════════
-const LS_KEY = "xero-taxonomy-v1";
-function saveLocal() {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e){}
-}
+// ═══════════════════════════════════════════════════════
+const LS_KEY = "xero-taxonomy-v2";
+function saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e){} }
 function loadLocal() {
   try {
     const d = localStorage.getItem(LS_KEY);
-    if (d) {
-      const p = JSON.parse(d);
-      if (p && p.sections && Array.isArray(p.sections) && p.sections.length > 0) S = p;
-    }
+    if (d) { const p = JSON.parse(d); if (isValidState(p)) S = p; }
   } catch(e) {}
 }
 
-// ═══════════════════════════════════════════════════════════
-// ABLY SYNC
-// ═══════════════════════════════════════════════════════════
-let ablyClient = null, ablyChannel = null, ablyRoom = null;
-let ablyBusy = false, ablyPushTimer = null;
-
-// Safe toast — works even before window assignments run
-function safeToast(msg) {
-  try { toast(msg); } catch(e) {
-    const w = document.getElementById("toastWrap");
-    if (!w) return;
-    const t = document.createElement("div");
-    t.className = "toast"; t.textContent = msg;
-    w.appendChild(t);
-    setTimeout(() => { t.style.opacity="0"; t.style.transition="opacity .3s"; setTimeout(()=>t.remove(),300); }, 2800);
-  }
+// ═══════════════════════════════════════════════════════
+// TOAST (defined early so always available)
+// ═══════════════════════════════════════════════════════
+function toast(msg, dur=2800) {
+  const w = document.getElementById("toastWrap");
+  if (!w) return;
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg;
+  w.appendChild(t);
+  setTimeout(() => { t.style.opacity="0"; t.style.transition="opacity .3s"; setTimeout(()=>t.remove(),300); }, dur);
 }
 
-function connectAbly(apiKey, room) {
-  ablyRoom = room;
-  setChip("connecting", "Connecting…");
+// ═══════════════════════════════════════════════════════
+// SUPABASE SYNC
+// ═══════════════════════════════════════════════════════
+let sbClient = null, sbChannel = null, sbRoom = null;
+let sbBusy = false, sbPushTimer = null;
 
-  // Load Ably SDK from CDN
-  if (!window.Ably) {
+function connectSupabase(url, key, room) {
+  sbRoom = room;
+  setChip("connecting", "Connecting…");
+  if (!window.supabase) {
     const s = document.createElement("script");
-    s.src = "https://cdn.ably.com/lib/ably.min-2.js";
-    s.onload = () => _doConnect(apiKey, room);
-    s.onerror = () => { setChip("", "Offline"); safeToast("❌ Failed to load Ably SDK"); };
+    s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+    s.onload = () => _doConnect(url, key, room);
+    s.onerror = () => { setChip("","Offline"); toast("❌ Failed to load Supabase SDK"); };
     document.head.appendChild(s);
   } else {
-    _doConnect(apiKey, room);
+    _doConnect(url, key, room);
   }
 }
 
-function _doConnect(apiKey, room) {
+async function _doConnect(url, key, room) {
   try {
-    if (ablyClient) { ablyClient.close(); }
-    ablyClient = new Ably.Realtime({ key: apiKey.trim() });
+    const { createClient } = window.supabase;
+    sbClient = createClient(url, key);
 
-    ablyClient.connection.on("connected", () => {
-      setChip("connected", "Live: " + room);
-      safeToast("🟢 Connected — " + room);
-      document.getElementById("shareBtn").style.display = "";
-    });
-    ablyClient.connection.on("disconnected", () => setChip("connecting", "Reconnecting…"));
-    ablyClient.connection.on("failed", () => { setChip("", "Offline"); safeToast("❌ Ably connection failed — check your API key"); });
+    // Load state from database
+    const { data, error } = await sbClient
+      .from("taxonomy_state")
+      .select("state")
+      .eq("room", room)
+      .maybeSingle();
 
-    // Channel with rewind:1 — new joiners get the last published state immediately
-    ablyChannel = ablyClient.channels.get("taxonomy:" + room, {
-      params: { rewind: "1" }
-    });
+    if (error) { console.warn("DB read error:", error.message); }
 
-    ablyChannel.subscribe("update", msg => {
-      if (ablyBusy) return;
-      const data = msg.data;
-      // Ignore empty or invalid messages
-      if (!data || !data.sections || !Array.isArray(data.sections) || data.sections.length === 0) return;
-      ablyBusy = true;
-      S = data;
+    if (data && isValidState(data.state)) {
+      S = data.state;
       render(); saveLocal();
-      setTimeout(() => ablyBusy = false, 80);
+    } else {
+      // No state in DB yet — push ours
+      await sbClient.from("taxonomy_state").upsert({
+        room, state: clone(S), updated_at: new Date().toISOString()
+      });
+    }
+
+    // Real-time broadcast channel
+    sbChannel = sbClient.channel("room:" + room, {
+      config: { broadcast: { self: false } }
     });
 
-    // Save credentials for auto-reconnect
-    try {
-      localStorage.setItem(LS_KEY + "-ably", JSON.stringify({ apiKey, room }));
-    } catch(e) {}
-
-
+    sbChannel.on("broadcast", { event: "state" }, (msg) => {
+      if (sbBusy) return;
+      const d = msg.payload?.state;
+      if (!isValidState(d)) return;
+      sbBusy = true;
+      S = d; render(); saveLocal();
+      setTimeout(() => sbBusy = false, 80);
+    }).subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        setChip("connected", "Live: " + room);
+        toast("🟢 Live — " + room);
+        document.getElementById("shareBtn").style.display = "";
+        try { localStorage.setItem(LS_KEY+"-sb", JSON.stringify({url,key,room})); } catch(e){}
+      } else if (status === "CHANNEL_ERROR") {
+        setChip("","Offline"); toast("❌ Connection failed — check your credentials");
+      }
+    });
 
   } catch(err) {
-    setChip("", "Offline");
-    safeToast("❌ " + err.message);
+    setChip("","Offline");
+    toast("❌ " + err.message);
   }
 }
 
-// Debounced push — batches rapid changes (drag, typing) into one message
-function ablyPush() {
-  if (!ablyChannel) return;
-  clearTimeout(ablyPushTimer);
-  ablyPushTimer = setTimeout(() => {
-    ablyBusy = true;
-    ablyChannel.publish("update", clone(S))
-      .catch(e => safeToast("Sync error: " + e.message))
-      .finally(() => setTimeout(() => ablyBusy = false, 80));
+function sbPush() {
+  if (!sbClient || !sbChannel) return;
+  clearTimeout(sbPushTimer);
+  sbPushTimer = setTimeout(async () => {
+    sbBusy = true;
+    const state = clone(S);
+    try {
+      // Broadcast to live users (instant)
+      await sbChannel.send({ type: "broadcast", event: "state", payload: { state } });
+      // Persist to database (survives disconnects)
+      await sbClient.from("taxonomy_state").upsert({
+        room: sbRoom, state, updated_at: new Date().toISOString()
+      });
+    } catch(e) { toast("Sync error: " + e.message); }
+    setTimeout(() => sbBusy = false, 80);
   }, 60);
 }
 
 function autoReconnect() {
-  if (HARDCODED_ABLY_KEY && HARDCODED_ROOM) {
-    connectAbly(HARDCODED_ABLY_KEY, HARDCODED_ROOM); return;
+  if (HARDCODED_SB_URL && HARDCODED_SB_KEY && HARDCODED_ROOM) {
+    connectSupabase(HARDCODED_SB_URL, HARDCODED_SB_KEY, HARDCODED_ROOM); return;
   }
-  const params = new URLSearchParams(location.search);
   try {
-    const saved = localStorage.getItem(LS_KEY + "-ably");
-    if (saved) {
-      const { apiKey, room } = JSON.parse(saved);
-      connectAbly(apiKey, params.get("room") || room);
-      return;
-    }
+    const saved = localStorage.getItem(LS_KEY+"-sb");
+    if (saved) { const {url,key,room} = JSON.parse(saved); connectSupabase(url,key,room); return; }
   } catch(e) {}
-  if (params.get("room")) safeToast("ℹ Room in URL — click 🔗 Go Live to connect with your Ably key");
 }
 
 function setChip(state, label) {
   const c = document.getElementById("syncChip");
-  c.className = "chip " + state;
-  c.textContent = label;
+  c.className = "chip " + state; c.textContent = label;
 }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 // RENDER
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 let sortableInstances = [];
 
 function render() {
   sortableInstances.forEach(s => { try { s.destroy(); } catch(e){} });
   sortableInstances = [];
-
   const board = document.getElementById("board");
   board.innerHTML = "";
 
   S.sections.forEach(sec => {
     const secEl = document.createElement("div");
-    secEl.className = "section";
-    secEl.dataset.sid = sec.id;
-
+    secEl.className = "section"; secEl.dataset.sid = sec.id;
     const hdr = document.createElement("div");
     hdr.className = "section-header";
     hdr.innerHTML = `<span class="section-line"></span><span class="section-label">${esc(sec.label)}</span><span class="section-line"></span>`;
     secEl.appendChild(hdr);
-
     const row = document.createElement("div");
-    row.className = "section-groups";
-    row.dataset.sid = sec.id;
-
+    row.className = "section-groups"; row.dataset.sid = sec.id;
     sec.groups.forEach(grp => row.appendChild(buildGroup(grp, sec.id)));
-
-    const addGrpBtn = document.createElement("button");
-    addGrpBtn.className = "add-group";
-    addGrpBtn.innerHTML = "+ Add Group";
-    addGrpBtn.onclick = () => addGroup(sec.id);
-    row.appendChild(addGrpBtn);
-
-    secEl.appendChild(row);
-    board.appendChild(secEl);
-
+    const addBtn = document.createElement("button");
+    addBtn.className = "add-group"; addBtn.innerHTML = "+ Add Group";
+    addBtn.onclick = () => addGroup(sec.id);
+    row.appendChild(addBtn);
+    secEl.appendChild(row); board.appendChild(secEl);
     const so = Sortable.create(row, {
-      group: "groups",
-      handle: ".drag-handle.group-drag",
-      animation: 120,
-      filter: ".add-group",
+      group:"groups", handle:".drag-handle.group-drag", animation:120, filter:".add-group",
       onEnd(evt) {
         const gid = evt.item.dataset.gid;
         const fromSid = evt.from.dataset.sid, toSid = evt.to.dataset.sid;
-        if (evt.oldIndex === evt.newIndex && fromSid === toSid) return;
+        if (evt.oldIndex===evt.newIndex && fromSid===toSid) return;
         pushU();
-        const fromSec = S.sections.find(s => s.id === fromSid);
-        const toSec   = S.sections.find(s => s.id === toSid);
-        const [grp] = fromSec.groups.splice(fromSec.groups.findIndex(g => g.id === gid), 1);
-        toSec.groups.splice(Math.max(0, evt.newIndex), 0, grp);
-        saveLocal(); ablyPush(); render();
+        const fs = S.sections.find(s=>s.id===fromSid), ts = S.sections.find(s=>s.id===toSid);
+        const [g] = fs.groups.splice(fs.groups.findIndex(g=>g.id===gid),1);
+        ts.groups.splice(Math.max(0,evt.newIndex),0,g);
+        saveLocal(); sbPush(); render();
       }
     });
     sortableInstances.push(so);
@@ -714,57 +448,42 @@ function render() {
 
 function buildGroup(grp, sid) {
   const el = document.createElement("div");
-  el.className = "group" + (grp.oos ? " oos" : "");
-  el.dataset.gid = grp.id;
-
+  el.className = "group"+(grp.oos?" oos":""); el.dataset.gid = grp.id;
   const hdr = document.createElement("div");
   hdr.className = "group-header";
   hdr.innerHTML = `
     <span class="drag-handle group-drag" title="Drag group">⠿</span>
-    <div class="group-name-wrap">
-      <span class="group-name" title="Double-click to rename">${esc(grp.name)}</span>
-    </div>
+    <div class="group-name-wrap"><span class="group-name" title="Double-click to rename">${esc(grp.name)}</span></div>
     <div class="group-actions">
-      <button class="icon-btn" title="${grp.oos ? "Mark In Scope" : "Mark Out of Scope"}" onclick="toggleGroupOos('${grp.id}')">${grp.oos ? "🔕" : "🔔"}</button>
+      <button class="icon-btn" title="${grp.oos?"Mark In Scope":"Mark Out of Scope"}" onclick="toggleGroupOos('${grp.id}')">${grp.oos?"🔕":"🔔"}</button>
       <button class="icon-btn red" title="Delete group" onclick="deleteGroup('${sid}','${grp.id}')">✕</button>
-    </div>
-  `;
+    </div>`;
   hdr.querySelector(".group-name").ondblclick = () => startRenameGroup(grp.id, hdr.querySelector(".group-name"));
   el.appendChild(hdr);
-
   const list = document.createElement("div");
-  list.className = "domain-list";
-  list.dataset.gid = grp.id;
-  (grp.domains || []).forEach(d => list.appendChild(buildDomain(d, grp.id)));
+  list.className = "domain-list"; list.dataset.gid = grp.id;
+  (grp.domains||[]).forEach(d => list.appendChild(buildDomain(d, grp.id)));
   el.appendChild(list);
-
   const addRow = document.createElement("div");
   addRow.className = "add-domain";
   const inp = document.createElement("input");
-  inp.className = "add-domain-input";
-  inp.placeholder = "Add domain…";
-  inp.onkeydown = e => { if (e.key === "Enter") addDomain(grp.id, inp); };
+  inp.className = "add-domain-input"; inp.placeholder = "Add domain…";
+  inp.onkeydown = e => { if (e.key==="Enter") addDomain(grp.id, inp); };
   const addBtn = document.createElement("button");
-  addBtn.className = "add-domain-btn";
-  addBtn.textContent = "+";
+  addBtn.className = "add-domain-btn"; addBtn.textContent = "+";
   addBtn.onclick = () => addDomain(grp.id, inp);
-  addRow.appendChild(inp); addRow.appendChild(addBtn);
-  el.appendChild(addRow);
-
+  addRow.appendChild(inp); addRow.appendChild(addBtn); el.appendChild(addRow);
   const so = Sortable.create(list, {
-    group: "domains",
-    animation: 100,
-    ghostClass: "sortable-ghost",
-    chosenClass: "sortable-chosen",
+    group:"domains", animation:100, ghostClass:"sortable-ghost", chosenClass:"sortable-chosen",
     onEnd(evt) {
       const did = evt.item.dataset.did;
-      const fromGid = evt.from.dataset.gid, toGid = evt.to.dataset.gid;
-      if (evt.oldIndex === evt.newIndex && fromGid === toGid) return;
+      const fg = evt.from.dataset.gid, tg = evt.to.dataset.gid;
+      if (evt.oldIndex===evt.newIndex && fg===tg) return;
       pushU();
-      const fromGrp = findGroup(fromGid), toGrp = findGroup(toGid);
-      const [dom] = fromGrp.domains.splice(fromGrp.domains.findIndex(d => d.id === did), 1);
-      toGrp.domains.splice(evt.newIndex, 0, dom);
-      saveLocal(); ablyPush(); render();
+      const fgrp = findGroup(fg), tgrp = findGroup(tg);
+      const [d] = fgrp.domains.splice(fgrp.domains.findIndex(d=>d.id===did),1);
+      tgrp.domains.splice(evt.newIndex,0,d);
+      saveLocal(); sbPush(); render();
     }
   });
   sortableInstances.push(so);
@@ -773,208 +492,125 @@ function buildGroup(grp, sid) {
 
 function buildDomain(d, gid) {
   const el = document.createElement("div");
-  el.className = "domain" + (d.oos ? " oos" : "");
-  el.dataset.did = d.id;
-
-  const flags = (d.flags || []);
-  const flagsHtml = flags.map(f => f === "less-automatable" ? `<span class="flag flag-la" title="Less Automatable">LA</span>` : "").join("")
-    + (d.oos ? `<span class="flag flag-oos">OOS</span>` : "");
-
-  el.innerHTML = `
-    <span class="domain-name" title="Double-click to rename">${esc(d.name)}</span>
-    ${flagsHtml}
-    <span class="domain-del" title="Delete" onclick="deleteDomain('${gid}','${d.id}')">✕</span>
-  `;
-
+  el.className = "domain"+(d.oos?" oos":""); el.dataset.did = d.id;
+  const flags = (d.flags||[]);
+  const flagsHtml = flags.map(f=>f==="less-automatable"?`<span class="flag flag-la">LA</span>`:"").join("")
+    +(d.oos?`<span class="flag flag-oos">OOS</span>`:"");
+  el.innerHTML = `<span class="domain-name" title="Double-click to rename">${esc(d.name)}</span>${flagsHtml}<span class="domain-del" title="Delete" onclick="deleteDomain('${gid}','${d.id}')">✕</span>`;
   el.querySelector(".domain-name").ondblclick = () => startRenameDomain(d.id, gid, el.querySelector(".domain-name"));
-
-  // Right-click → toggle Less Automatable flag
   el.oncontextmenu = e => {
-    e.preventDefault();
-    pushU();
-    const dom = findDomain(gid, d.id);
-    if (!dom) return;
-    dom.flags = dom.flags || [];
+    e.preventDefault(); pushU();
+    const dom = findDomain(gid,d.id); if (!dom) return;
+    dom.flags = dom.flags||[];
     const i = dom.flags.indexOf("less-automatable");
-    if (i >= 0) { dom.flags.splice(i,1); toast("LA flag removed"); }
+    if (i>=0) { dom.flags.splice(i,1); toast("LA flag removed"); }
     else { dom.flags.push("less-automatable"); toast("Flagged as Less Automatable (LA)"); }
-    saveLocal(); ablyPush(); render();
+    saveLocal(); sbPush(); render();
   };
   return el;
 }
 
-// ═══════════════════════════════════════════════════════════
-// INLINE RENAME
-// ═══════════════════════════════════════════════════════════
 function startRenameGroup(gid, span) {
   const inp = document.createElement("input");
   inp.className = "group-name-input"; inp.value = span.textContent;
   span.replaceWith(inp); inp.focus(); inp.select();
-  const commit = () => {
-    const val = inp.value.trim();
-    if (val) { pushU(); const g = findGroup(gid); if (g) { g.name = val; saveLocal(); ablyPush(); } }
-    render();
-  };
+  const commit = () => { const v=inp.value.trim(); if(v){pushU();const g=findGroup(gid);if(g){g.name=v;saveLocal();sbPush();}} render(); };
   inp.onblur = commit;
-  inp.onkeydown = e => { if (e.key==="Enter") inp.blur(); if (e.key==="Escape") render(); };
+  inp.onkeydown = e => { if(e.key==="Enter") inp.blur(); if(e.key==="Escape") render(); };
 }
 function startRenameDomain(did, gid, span) {
   const inp = document.createElement("input");
   inp.className = "domain-name-input"; inp.value = span.textContent;
   span.replaceWith(inp); inp.focus(); inp.select();
-  const commit = () => {
-    const val = inp.value.trim();
-    if (val) { pushU(); const d = findDomain(gid,did); if (d) { d.name = val; saveLocal(); ablyPush(); } }
-    render();
-  };
+  const commit = () => { const v=inp.value.trim(); if(v){pushU();const d=findDomain(gid,did);if(d){d.name=v;saveLocal();sbPush();}} render(); };
   inp.onblur = commit;
-  inp.onkeydown = e => { if (e.key==="Enter") inp.blur(); if (e.key==="Escape") render(); };
+  inp.onkeydown = e => { if(e.key==="Enter") inp.blur(); if(e.key==="Escape") render(); };
 }
 
-// ═══════════════════════════════════════════════════════════
-// MUTATIONS
-// ═══════════════════════════════════════════════════════════
 function addGroup(sid) {
-  const name = prompt("New group name:");
-  if (!name || !name.trim()) return;
-  pushU();
-  S.sections.find(s=>s.id===sid).groups.push({ id: genId(), name: name.trim(), oos: false, domains: [] });
-  saveLocal(); ablyPush(); render();
+  const name = prompt("New group name:"); if (!name||!name.trim()) return;
+  pushU(); S.sections.find(s=>s.id===sid).groups.push({id:genId(),name:name.trim(),oos:false,domains:[]});
+  saveLocal(); sbPush(); render();
 }
 function deleteGroup(sid, gid) {
-  const g = findGroup(gid);
-  if (!confirm(`Delete "${g.name}" and all its domains?`)) return;
-  pushU();
-  const sec = S.sections.find(s=>s.id===sid);
-  sec.groups = sec.groups.filter(g=>g.id!==gid);
-  saveLocal(); ablyPush(); render();
+  const g = findGroup(gid); if (!confirm(`Delete "${g.name}" and all its domains?`)) return;
+  pushU(); const sec=S.sections.find(s=>s.id===sid); sec.groups=sec.groups.filter(g=>g.id!==gid);
+  saveLocal(); sbPush(); render();
 }
 function toggleGroupOos(gid) {
-  pushU();
-  const g = findGroup(gid); g.oos = !g.oos;
-  g.domains.forEach(d => d.oos = g.oos);
-  saveLocal(); ablyPush(); render();
+  pushU(); const g=findGroup(gid); g.oos=!g.oos; g.domains.forEach(d=>d.oos=g.oos);
+  saveLocal(); sbPush(); render();
 }
 function addDomain(gid, inp) {
-  const val = inp.value.trim(); if (!val) return;
-  pushU();
-  findGroup(gid).domains.push({ id: genId(), name: val, flags: [] });
-  inp.value = "";
-  saveLocal(); ablyPush(); render();
+  const val=inp.value.trim(); if (!val) return;
+  pushU(); findGroup(gid).domains.push({id:genId(),name:val,flags:[]});
+  inp.value=""; saveLocal(); sbPush(); render();
 }
 function deleteDomain(gid, did) {
-  pushU();
-  const g = findGroup(gid); g.domains = g.domains.filter(d=>d.id!==did);
-  saveLocal(); ablyPush(); render();
+  pushU(); const g=findGroup(gid); g.domains=g.domains.filter(d=>d.id!==did);
+  saveLocal(); sbPush(); render();
 }
 
-// ═══════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════
-function findGroup(gid) {
-  for (const s of S.sections) for (const g of s.groups) if (g.id===gid) return g;
-  return null;
-}
-function findDomain(gid, did) {
-  const g = findGroup(gid); return g ? g.domains.find(d=>d.id===did) : null;
-}
+function findGroup(gid) { for (const s of S.sections) for (const g of s.groups) if (g.id===gid) return g; return null; }
+function findDomain(gid,did) { const g=findGroup(gid); return g?g.domains.find(d=>d.id===did):null; }
 function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
-// ═══════════════════════════════════════════════════════════
-// MODALS
-// ═══════════════════════════════════════════════════════════
 function openConnectModal() {
-  try {
-    const saved = localStorage.getItem(LS_KEY + "-ably");
-    if (saved) {
-      const { apiKey, room } = JSON.parse(saved);
-      document.getElementById("ablyKeyInput").value = apiKey;
-      document.getElementById("ablyRoomInput").value = room;
-    }
-  } catch(e) {}
+  try { const s=localStorage.getItem(LS_KEY+"-sb"); if(s){const{url,key,room}=JSON.parse(s);document.getElementById("sbUrlInput").value=url;document.getElementById("sbKeyInput").value=key;document.getElementById("sbRoomInput").value=room;} } catch(e){}
   document.getElementById("connectOverlay").classList.add("open");
 }
 function connectFromModal() {
-  const key  = document.getElementById("ablyKeyInput").value.trim();
-  const room = document.getElementById("ablyRoomInput").value.trim();
-  if (!key)  { toast("❌ Enter your Ably API key"); return; }
-  if (!room) { toast("❌ Enter a room name"); return; }
-  closeModal("connectOverlay");
-  connectAbly(key, room);
+  const url=document.getElementById("sbUrlInput").value.trim();
+  const key=document.getElementById("sbKeyInput").value.trim();
+  const room=document.getElementById("sbRoomInput").value.trim();
+  if (!url||!key||!room) { toast("❌ Fill in all fields"); return; }
+  closeModal("connectOverlay"); connectSupabase(url,key,room);
 }
 function closeModal(id) { document.getElementById(id).classList.remove("open"); }
 
 function shareUrl() {
-  const url = location.origin + location.pathname + "?room=" + encodeURIComponent(ablyRoom);
+  const url = location.origin+location.pathname+"?room="+encodeURIComponent(sbRoom);
   document.getElementById("shareUrlText").textContent = url;
   document.getElementById("shareOverlay").classList.add("open");
 }
 function copyShareUrl() {
   navigator.clipboard.writeText(document.getElementById("shareUrlText").textContent)
-    .then(() => { toast("✅ Link copied!"); closeModal("shareOverlay"); });
+    .then(()=>{ toast("✅ Link copied!"); closeModal("shareOverlay"); });
 }
 
-// ═══════════════════════════════════════════════════════════
-// IMPORT / EXPORT / RESET
-// ═══════════════════════════════════════════════════════════
 function exportJSON() {
-  const blob = new Blob([JSON.stringify(S,null,2)], { type:"application/json" });
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-  a.download = "xero-domain-taxonomy.json"; a.click();
-  toast("✅ Exported");
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:"application/json"}));
+  a.download="xero-domain-taxonomy.json"; a.click(); toast("✅ Exported");
 }
 function importJSON() {
-  const inp = document.createElement("input"); inp.type="file"; inp.accept=".json";
-  inp.onchange = () => {
-    const r = new FileReader();
-    r.onload = e => {
-      try {
-        const d = JSON.parse(e.target.result);
-        if (!d.sections) throw new Error("Invalid format");
-        pushU(); S = d; saveLocal(); ablyPush(); render();
-        toast("✅ Imported");
-      } catch(ex) { toast("❌ " + ex.message); }
-    };
-    r.readAsText(inp.files[0]);
-  };
-  inp.click();
+  const inp=document.createElement("input"); inp.type="file"; inp.accept=".json";
+  inp.onchange=()=>{ const r=new FileReader(); r.onload=e=>{ try{ const d=JSON.parse(e.target.result); if(!d.sections) throw new Error("Invalid"); pushU();S=d;saveLocal();sbPush();render();toast("✅ Imported"); }catch(ex){toast("❌ "+ex.message);} }; r.readAsText(inp.files[0]); }; inp.click();
 }
 function resetToDefault() {
   if (!confirm("Reset to default taxonomy? All edits will be lost.")) return;
-  pushU(); S = clone(DEFAULT_STATE);
-  saveLocal(); ablyPush(); render();
-  toast("↺ Reset to default");
+  pushU(); S=clone(DEFAULT_STATE); saveLocal(); sbPush(); render(); toast("↺ Reset to default");
 }
 
-// ═══════════════════════════════════════════════════════════
-// KEYBOARD SHORTCUTS
-// ═══════════════════════════════════════════════════════════
 document.addEventListener("keydown", e => {
-  if ((e.ctrlKey||e.metaKey) && e.key==="z" && !e.shiftKey) { e.preventDefault(); doUndo(); }
-  if ((e.ctrlKey||e.metaKey) && (e.key==="y"||(e.key==="z"&&e.shiftKey))) { e.preventDefault(); doRedo(); }
+  if ((e.ctrlKey||e.metaKey)&&e.key==="z"&&!e.shiftKey) { e.preventDefault(); doUndo(); }
+  if ((e.ctrlKey||e.metaKey)&&(e.key==="y"||(e.key==="z"&&e.shiftKey))) { e.preventDefault(); doRedo(); }
 });
 document.querySelectorAll(".overlay").forEach(el => {
   el.addEventListener("click", e => { if (e.target===el) el.classList.remove("open"); });
 });
 
-// ═══════════════════════════════════════════════════════════
-// EXPOSE GLOBALS (needed for inline onclick handlers in sandboxed environments)
-// ═══════════════════════════════════════════════════════════
 Object.assign(window, {
-  toast, doUndo, doRedo,
-  openConnectModal, connectFromModal, closeModal,
-  shareUrl, copyShareUrl,
-  exportJSON, importJSON, resetToDefault,
-  addGroup, deleteGroup, toggleGroupOos,
-  addDomain, deleteDomain
+  toast, doUndo, doRedo, openConnectModal, connectFromModal, closeModal,
+  shareUrl, copyShareUrl, exportJSON, importJSON, resetToDefault,
+  addGroup, deleteGroup, toggleGroupOos, addDomain, deleteDomain
 });
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 // BOOT
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 try { loadLocal(); } catch(e) {}
-if (!S || !S.sections || !Array.isArray(S.sections) || S.sections.length === 0) S = clone(DEFAULT_STATE);
-try { render(); } catch(e) { console.error('render error:', e); S = clone(DEFAULT_STATE); render(); }
+if (!isValidState(S)) S = clone(DEFAULT_STATE);
+try { render(); } catch(e) { S = clone(DEFAULT_STATE); render(); }
 autoReconnect();
 </script>
 </body>

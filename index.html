@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Xero Domain Taxonomy</title>
+<title>Domain Taxonomy</title>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -91,9 +91,11 @@
   .domain-name:hover { color: var(--blue); }
   .domain-name-input { font-size: 11px; font-weight: 500; flex: 1; border: 1px solid var(--blue); border-radius: 3px; padding: 1px 4px; outline: none; }
 
-  .flag { font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; letter-spacing: .02em; flex-shrink: 0; }
-  .flag-la { background: var(--amber-bg); color: #92400e; border: 1px solid #fde68a; }
-  .flag-oos { background: var(--oos-bg); color: #64748b; border: 1px solid #cbd5e1; font-style: italic; }
+  .flag { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; letter-spacing: .03em; flex-shrink: 0; cursor: pointer; user-select: none; }
+  .flag-h { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .flag-m { background: var(--amber-bg); color: #92400e; border: 1px solid #fde68a; }
+  .flag-l { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+  .flag-oos { background: var(--oos-bg); color: #64748b; border: 1px solid #cbd5e1; font-style: italic; cursor: default; }
 
   .domain-del { cursor: pointer; color: #ccc; font-size: 13px; flex-shrink: 0; line-height: 1; border-radius: 2px; padding: 0 1px; }
   .domain-del:hover { color: var(--red); background: #fee2e2; }
@@ -145,17 +147,29 @@
   .btn-versions { position: relative; }
   .v-badge { position: absolute; top: -4px; right: -4px; background: var(--blue); color: white; font-size: 9px; font-weight: 700; border-radius: 10px; padding: 1px 5px; line-height: 1.4; }
   body.sidebar-open .toolbar,
+  body.sidebar-open .tab-bar,
   body.sidebar-open .board { margin-left: 248px; transition: margin-left .22s ease; }
   body:not(.sidebar-open) .toolbar,
+  body:not(.sidebar-open) .tab-bar,
   body:not(.sidebar-open) .board { margin-left: 0; transition: margin-left .22s ease; }
+
+  /* ── SCENARIO TABS ── */
+  .tab-bar { background: white; border-bottom: 1px solid var(--grey-border); padding: 0 16px; display: flex; align-items: flex-end; gap: 0; overflow-x: auto; }
+  .tab { display: flex; align-items: center; gap: 5px; padding: 8px 14px 7px; cursor: pointer; border-bottom: 2px solid transparent; font-size: 12px; font-weight: 500; color: var(--text-light); white-space: nowrap; border-radius: 4px 4px 0 0; transition: color .12s, background .12s; user-select: none; position: relative; }
+  .tab:hover { color: var(--text); background: var(--grey); }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 700; background: var(--blue-light); }
+  .tab-name { pointer-events: none; }
+  .tab-name-input { font-size: 12px; font-weight: 700; border: 1px solid var(--blue); border-radius: 3px; padding: 1px 5px; outline: none; width: 120px; }
+  .tab-del { opacity: 0; font-size: 14px; color: var(--text-light); border: none; background: transparent; cursor: pointer; padding: 0 2px; border-radius: 2px; line-height: 1; margin-left: 2px; }
+  .tab:hover .tab-del { opacity: 1; }
+  .tab-del:hover { color: var(--red); background: #fee2e2; }
+  .tab-add { padding: 8px 12px 7px; cursor: pointer; color: var(--text-light); font-size: 18px; line-height: 1; border: none; background: transparent; border-radius: 4px 4px 0 0; font-weight: 300; }
+  .tab-add:hover { color: var(--blue); background: var(--grey); }
 </style>
 </head>
 <body>
 
 <header>
-  <span class="logo">Xero</span>
-  <span class="sep">|</span>
-  <span class="title">Domain Taxonomy</span>
   <span class="spacer"></span>
   <span id="syncChip" class="chip">Offline</span>
 </header>
@@ -170,10 +184,13 @@
   <button class="btn btn-primary" onclick="openConnectModal()">🔗 Go Live</button>
   <button class="btn btn-ghost" id="shareBtn" onclick="shareUrl()" style="display:none">🔀 Share URL</button>
   <div class="sep"></div>
+  <button class="btn btn-ghost" onclick="exportExcel()">⬇ Export to Excel</button>
   <button class="btn btn-ghost" onclick="exportJSON()">⬇ Export JSON</button>
   <button class="btn btn-ghost" onclick="importJSON()">⬆ Import JSON</button>
   <div class="sep"></div>
 </div>
+
+<div class="tab-bar" id="tabBar"></div>
 
 <!-- VERSION HISTORY SIDEBAR -->
 <div class="sidebar" id="sidebar">
@@ -235,8 +252,12 @@ const HARDCODED_ROOM    = "aaa-domains";
 // DEFAULT STATE
 // ═══════════════════════════════════════════════════════
 const DEFAULT_STATE = {
-  versions: [],
-  sections: [
+  activeScenario: "sc-default",
+  scenarios: [{
+    id: "sc-default",
+    name: "Scenario A",
+    versions: [],
+    sections: [
     {
       id: "s1", label: "CUSTOMER-FACING",
       groups: [
@@ -263,7 +284,7 @@ const DEFAULT_STATE = {
             { id: "d16", name: "Enterprise Account Management" },
             { id: "d17", name: "Revenue Operations & Pricing" }]},
         { id: "g-mktg", name: "Marketing & Comms", oos: false, domains: [
-            { id: "d18", name: "Brand Strategy & Identity", flags: ["less-automatable"] },
+            { id: "d18", name: "Brand Strategy & Identity" },
             { id: "d19", name: "Demand Generation & Campaigns" },
             { id: "d20", name: "Content & Creative Production" },
             { id: "d21", name: "Corporate Communications" },
@@ -308,7 +329,8 @@ const DEFAULT_STATE = {
             { id: "d47", name: "Rest of World Market Operations" }]}
       ]
     }
-  ]
+    ] // end sections
+  }]  // end scenarios
 };
 
 // ═══════════════════════════════════════════════════════
@@ -319,7 +341,23 @@ let undos = [], redos = [];
 let uid = 0;
 function genId() { return "x"+(++uid)+"_"+Math.random().toString(36).slice(2,7); }
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
-function isValidState(o) { return o && o.sections && Array.isArray(o.sections) && o.sections.length > 0; }
+function isValidState(o) {
+  if (!o) return false;
+  if (o.scenarios && Array.isArray(o.scenarios) && o.scenarios.length > 0) return true;
+  if (o.sections && Array.isArray(o.sections) && o.sections.length > 0) return true; // legacy
+  return false;
+}
+function migrateState(p) {
+  if (!p) return null;
+  if (p.scenarios) return p; // already new format
+  if (p.sections) { // legacy single-scenario format
+    const id = "sc-migrated";
+    return { activeScenario: id, scenarios: [{ id, name: "Default", versions: p.versions||[], sections: p.sections }] };
+  }
+  return null;
+}
+// Returns the active scenario object
+function cur() { return S.scenarios.find(sc=>sc.id===S.activeScenario)||S.scenarios[0]; }
 
 function pushU() { undos.push(clone(S)); if (undos.length>80) undos.shift(); redos=[]; }
 function doUndo() { if (!undos.length) return toast("Nothing to undo"); redos.push(clone(S)); S=undos.pop(); render(); saveLocal(); sbPush(); }
@@ -328,12 +366,12 @@ function doRedo() { if (!redos.length) return toast("Nothing to redo"); undos.pu
 // ═══════════════════════════════════════════════════════
 // LOCAL STORAGE
 // ═══════════════════════════════════════════════════════
-const LS_KEY = "xero-taxonomy-v2";
+const LS_KEY = "domain-taxonomy-v2";
 function saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e){} }
 function loadLocal() {
   try {
     const d = localStorage.getItem(LS_KEY);
-    if (d) { const p = JSON.parse(d); if (isValidState(p)) S = p; }
+    if (d) { const p = JSON.parse(d); const m = migrateState(p); if (m && isValidState(m)) S = m; }
   } catch(e) {}
 }
 
@@ -384,7 +422,7 @@ async function _doConnect(url, key, room) {
     if (error) { console.warn("DB read error:", error.message); }
 
     if (data && isValidState(data.state)) {
-      S = data.state;
+      S = migrateState(data.state) || data.state;
       render(); saveLocal();
     } else {
       // No state in DB yet — push ours
@@ -403,7 +441,7 @@ async function _doConnect(url, key, room) {
       const d = msg.payload?.state;
       if (!isValidState(d)) return;
       sbBusy = true;
-      S = d; render(); saveLocal();
+      S = migrateState(d) || d; render(); saveLocal();
       setTimeout(() => sbBusy = false, 80);
     }).subscribe((status) => {
       if (status === "SUBSCRIBED") {
@@ -463,12 +501,13 @@ let sortableInstances = [];
 function render() {
   sortableInstances.forEach(s => { try { s.destroy(); } catch(e){} });
   sortableInstances = [];
-  S.versions = S.versions || [];
+  cur().versions = cur().versions || [];
   const board = document.getElementById("board");
   board.innerHTML = "";
+  renderTabs();
   renderSidebar();
 
-  S.sections.forEach(sec => {
+  cur().sections.forEach(sec => {
     const secEl = document.createElement("div");
     secEl.className = "section"; secEl.dataset.sid = sec.id;
     const hdr = document.createElement("div");
@@ -509,7 +548,7 @@ function render() {
         const fromSid = evt.from.dataset.sid, toSid = evt.to.dataset.sid;
         if (evt.oldIndex===evt.newIndex && fromSid===toSid) return;
         pushU();
-        const fs = S.sections.find(s=>s.id===fromSid), ts = S.sections.find(s=>s.id===toSid);
+        const fs = cur().sections.find(s=>s.id===fromSid), ts = cur().sections.find(s=>s.id===toSid);
         const [g] = fs.groups.splice(fs.groups.findIndex(g=>g.id===gid),1);
         ts.groups.splice(Math.max(0,evt.newIndex),0,g);
         saveLocal(); sbPush(); render();
@@ -579,20 +618,12 @@ function buildGroup(grp, sid) {
 function buildDomain(d, gid) {
   const el = document.createElement("div");
   el.className = "domain"+(d.oos?" oos":""); el.dataset.did = d.id;
-  const flags = (d.flags||[]);
-  const flagsHtml = flags.map(f=>f==="less-automatable"?`<span class="flag flag-la">LA</span>`:"").join("")
-    +(d.oos?`<span class="flag flag-oos">OOS</span>`:"");
-  el.innerHTML = `<span class="domain-name" title="Double-click to rename">${esc(d.name)}</span>${flagsHtml}<span class="domain-del" title="Delete" onclick="deleteDomain('${gid}','${d.id}')">✕</span>`;
+  const pri = d.priority || "";
+  const priHtml = pri ? `<span class="flag flag-${pri.toLowerCase()}" title="Priority: ${pri} — click to cycle H→M→L→off" onclick="cyclePriority('${gid}','${d.id}')">${pri}</span>` : "";
+  const oosHtml = d.oos ? `<span class="flag flag-oos">OOS</span>` : "";
+  el.innerHTML = `<span class="domain-name" title="Double-click to rename">${esc(d.name)}</span>${priHtml}${oosHtml}<span class="domain-del" title="Delete" onclick="deleteDomain('${gid}','${d.id}')">✕</span>`;
   el.querySelector(".domain-name").ondblclick = () => startRenameDomain(d.id, gid, el.querySelector(".domain-name"));
-  el.oncontextmenu = e => {
-    e.preventDefault(); pushU();
-    const dom = findDomain(gid,d.id); if (!dom) return;
-    dom.flags = dom.flags||[];
-    const i = dom.flags.indexOf("less-automatable");
-    if (i>=0) { dom.flags.splice(i,1); toast("LA flag removed"); }
-    else { dom.flags.push("less-automatable"); toast("Flagged as Less Automatable (LA)"); }
-    saveLocal(); sbPush(); render();
-  };
+  el.oncontextmenu = e => { e.preventDefault(); cyclePriority(gid, d.id); };
   return el;
 }
 
@@ -617,30 +648,30 @@ function startRenameSection(sid, span) {
   const inp = document.createElement("input");
   inp.className = "section-label-input"; inp.value = span.textContent;
   span.replaceWith(inp); inp.focus(); inp.select();
-  const commit = () => { const v=inp.value.trim(); if(v){pushU();const sec=S.sections.find(s=>s.id===sid);if(sec){sec.label=v;saveLocal();sbPush();}} render(); };
+  const commit = () => { const v=inp.value.trim(); if(v){pushU();const sec=cur().sections.find(s=>s.id===sid);if(sec){sec.label=v;saveLocal();sbPush();}} render(); };
   inp.onblur = commit;
   inp.onkeydown = e => { if(e.key==="Enter") inp.blur(); if(e.key==="Escape") render(); };
 }
 function addSection() {
   const name = prompt("New section name:"); if (!name||!name.trim()) return;
-  pushU(); S.sections.push({id:genId(), label:name.trim().toUpperCase(), groups:[]});
+  pushU(); cur().sections.push({id:genId(), label:name.trim().toUpperCase(), groups:[]});
   saveLocal(); sbPush(); render();
 }
 function deleteSection(sid) {
-  const sec = S.sections.find(s=>s.id===sid);
+  const sec = cur().sections.find(s=>s.id===sid);
   if (!sec) return;
   if (sec.groups.length > 0 && !confirm(`Delete "${sec.label}" and all its groups?`)) return;
-  pushU(); S.sections = S.sections.filter(s=>s.id!==sid);
+  pushU(); cur().sections = cur().sections.filter(s=>s.id!==sid);
   saveLocal(); sbPush(); render();
 }
 function addGroup(sid) {
   const name = prompt("New group name:"); if (!name||!name.trim()) return;
-  pushU(); S.sections.find(s=>s.id===sid).groups.push({id:genId(),name:name.trim(),oos:false,domains:[]});
+  pushU(); cur().sections.find(s=>s.id===sid).groups.push({id:genId(),name:name.trim(),oos:false,domains:[]});
   saveLocal(); sbPush(); render();
 }
 function deleteGroup(sid, gid) {
   const g = findGroup(gid); if (!confirm(`Delete "${g.name}" and all its domains?`)) return;
-  pushU(); const sec=S.sections.find(s=>s.id===sid); sec.groups=sec.groups.filter(g=>g.id!==gid);
+  pushU(); const sec=cur().sections.find(s=>s.id===sid); sec.groups=sec.groups.filter(g=>g.id!==gid);
   saveLocal(); sbPush(); render();
 }
 function toggleGroupOos(gid) {
@@ -666,7 +697,7 @@ function renderSidebar() {
   const body = document.getElementById("sidebarBody");
   const badge = document.getElementById("vBadge");
   if (!body) return;
-  const vs = S.versions || [];
+  const vs = cur().versions || [];
   if (badge) { badge.textContent = vs.length; badge.style.display = vs.length ? "" : "none"; }
   if (vs.length === 0) {
     body.innerHTML = `<div class="sidebar-empty">No saved versions yet.<br><br>Click <strong>💾 Save Version</strong> to snapshot the current state of the board.<br><br>Your team can then restore any version at any time.</div>`;
@@ -690,9 +721,9 @@ function renderSidebar() {
 }
 function saveVersion() {
   const name = prompt("Name this version (e.g. 'Before Q3 review', 'Draft v2'):"); if (!name||!name.trim()) return;
-  S.versions = S.versions || [];
-  S.versions.unshift({ id: genId(), name: name.trim(), timestamp: Date.now(), snapshot: { sections: clone(S.sections) } });
-  if (S.versions.length > 30) S.versions = S.versions.slice(0, 30);
+  cur().versions = cur().versions || [];
+  cur().versions.unshift({ id: genId(), name: name.trim(), timestamp: Date.now(), snapshot: { sections: clone(cur().sections) } });
+  if (cur().versions.length > 30) cur().versions = cur().versions.slice(0, 30);
   saveLocal(); sbPush(); renderSidebar();
   // Open sidebar so they see it
   document.body.classList.add("sidebar-open");
@@ -700,21 +731,21 @@ function saveVersion() {
   toast("💾 Version saved: " + name.trim());
 }
 function restoreVersion(vid) {
-  const v = (S.versions||[]).find(v=>v.id===vid); if (!v) return;
+  const v = (cur().versions||[]).find(v=>v.id===vid); if (!v) return;
   if (!confirm(`Restore "${v.name}"?\n\nYour current layout will be overwritten. You can undo with Ctrl+Z.`)) return;
-  pushU(); S.sections = clone(v.snapshot.sections);
+  pushU(); cur().sections = clone(v.snapshot.sections);
   saveLocal(); sbPush(); render();
   toast("↩ Restored: " + v.name);
 }
 function deleteVersion(vid) {
-  const v = (S.versions||[]).find(v=>v.id===vid); if (!v) return;
+  const v = (cur().versions||[]).find(v=>v.id===vid); if (!v) return;
   if (!confirm(`Delete version "${v.name}"? This can't be undone.`)) return;
-  S.versions = S.versions.filter(v=>v.id!==vid);
+  cur().versions = cur().versions.filter(v=>v.id!==vid);
   saveLocal(); sbPush(); renderSidebar();
   toast("🗑 Version deleted");
 }
 
-function findGroup(gid) { for (const s of S.sections) for (const g of s.groups) if (g.id===gid) return g; return null; }
+function findGroup(gid) { for (const s of cur().sections) for (const g of s.groups) if (g.id===gid) return g; return null; }
 function findDomain(gid,did) { const g=findGroup(gid); return g?g.domains.find(d=>d.id===did):null; }
 function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
@@ -741,17 +772,118 @@ function copyShareUrl() {
     .then(()=>{ toast("✅ Link copied!"); closeModal("shareOverlay"); });
 }
 
+function cyclePriority(gid, did) {
+  pushU();
+  const d = findDomain(gid, did); if (!d) return;
+  const cycle = {"":"H","H":"M","M":"L","L":""};
+  const prev = d.priority || "";
+  d.priority = cycle[prev];
+  saveLocal(); sbPush(); render();
+  const label = {"H":"🔴 High","M":"🟡 Medium","L":"🟢 Low","":"removed"}[d.priority];
+  toast("Priority " + label);
+}
+
+function exportExcel() {
+  // Build rows
+  const rows = [["Section","Group","Domain","OOS","Priority"]];
+  const scenarioName = cur().name || "Scenario";
+  rows[0].unshift("Scenario");
+  cur().sections.forEach(sec => {
+    sec.groups.forEach(grp => {
+      if (grp.domains.length === 0) {
+        rows.push([scenarioName, sec.label, grp.name, "", grp.oos?"Yes":"", ""]);
+      } else {
+        grp.domains.forEach(d => {
+          rows.push([scenarioName, sec.label, grp.name, d.name, d.oos?"Yes":"", d.priority||""]);
+        });
+      }
+    });
+  });
+  // Build CSV (no external lib needed — works as Excel-compatible UTF-8 CSV)
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const bom = "﻿"; // UTF-8 BOM so Excel opens it correctly
+  const blob = new Blob([bom + csv], {type:"text/csv;charset=utf-8;"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "domain-taxonomy.csv";
+  a.click();
+  toast("✅ Exported to Excel");
+}
+
 function exportJSON() {
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:"application/json"}));
-  a.download="xero-domain-taxonomy.json"; a.click(); toast("✅ Exported");
+  a.download="domain-taxonomy.json"; a.click(); toast("✅ Exported");
 }
 function importJSON() {
   const inp=document.createElement("input"); inp.type="file"; inp.accept=".json";
-  inp.onchange=()=>{ const r=new FileReader(); r.onload=e=>{ try{ const d=JSON.parse(e.target.result); if(!d.sections) throw new Error("Invalid"); pushU();S=d;saveLocal();sbPush();render();toast("✅ Imported"); }catch(ex){toast("❌ "+ex.message);} }; r.readAsText(inp.files[0]); }; inp.click();
+  inp.onchange=()=>{ const r=new FileReader(); r.onload=e=>{ try{ const d=JSON.parse(e.target.result); const m=migrateState(d); if(!m) throw new Error("Invalid file"); pushU();S=m;saveLocal();sbPush();render();toast("✅ Imported"); }catch(ex){toast("❌ "+ex.message);} }; r.readAsText(inp.files[0]); }; inp.click();
 }
 function resetToDefault() {
   if (!confirm("Reset to default taxonomy? All edits will be lost.")) return;
   pushU(); S=clone(DEFAULT_STATE); saveLocal(); sbPush(); render(); toast("↺ Reset to default");
+}
+
+// ── SCENARIO TABS ──────────────────────────────────────────────────────
+function renderTabs() {
+  const bar = document.getElementById("tabBar");
+  if (!bar) return;
+  bar.innerHTML = "";
+  const scenarios = S.scenarios || [];
+  scenarios.forEach(sc => {
+    const tab = document.createElement("div");
+    tab.className = "tab" + (sc.id === S.activeScenario ? " active" : "");
+    tab.dataset.scid = sc.id;
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "tab-name";
+    nameSpan.textContent = sc.name;
+    nameSpan.ondblclick = e => { e.stopPropagation(); startRenameScenario(sc.id, nameSpan); };
+    tab.appendChild(nameSpan);
+    if (scenarios.length > 1) {
+      const del = document.createElement("button");
+      del.className = "tab-del"; del.title = "Delete scenario"; del.textContent = "×";
+      del.onclick = e => { e.stopPropagation(); deleteScenario(sc.id); };
+      tab.appendChild(del);
+    }
+    tab.onclick = () => switchScenario(sc.id);
+    bar.appendChild(tab);
+  });
+  const addBtn = document.createElement("button");
+  addBtn.className = "tab-add"; addBtn.title = "Add scenario"; addBtn.textContent = "+";
+  addBtn.onclick = addScenario;
+  bar.appendChild(addBtn);
+}
+function switchScenario(id) {
+  if (S.activeScenario === id) return;
+  S.activeScenario = id;
+  saveLocal(); sbPush(); render();
+}
+function addScenario() {
+  const name = prompt("Scenario name (e.g. 'Option B', 'Q4 Draft'):"); if (!name||!name.trim()) return;
+  const copy = confirm("Start with a copy of the current scenario?\n\nOK = copy current layout\nCancel = start blank");
+  const id = genId();
+  const newSc = { id, name: name.trim(), versions: [],
+    sections: copy ? clone(cur().sections) : clone(DEFAULT_STATE.scenarios[0].sections) };
+  pushU(); S.scenarios.push(newSc); S.activeScenario = id;
+  saveLocal(); sbPush(); render();
+  toast("✅ Created: " + name.trim());
+}
+function deleteScenario(id) {
+  if (S.scenarios.length <= 1) return toast("Can't delete the last scenario");
+  const sc = S.scenarios.find(s=>s.id===id); if (!sc) return;
+  if (!confirm(`Delete scenario "${sc.name}" and all its content?`)) return;
+  pushU(); S.scenarios = S.scenarios.filter(s=>s.id!==id);
+  if (S.activeScenario === id) S.activeScenario = S.scenarios[0].id;
+  saveLocal(); sbPush(); render();
+  toast("🗑 Scenario deleted");
+}
+function startRenameScenario(id, span) {
+  const inp = document.createElement("input");
+  inp.className = "tab-name-input"; inp.value = span.textContent;
+  span.replaceWith(inp); inp.focus(); inp.select();
+  const commit = () => { const v=inp.value.trim(); if(v){pushU();const sc=S.scenarios.find(s=>s.id===id);if(sc){sc.name=v;saveLocal();sbPush();}} renderTabs(); };
+  inp.onblur = commit;
+  inp.onkeydown = e => { if(e.key==="Enter") inp.blur(); if(e.key==="Escape") renderTabs(); };
+  inp.onclick = e => e.stopPropagation();
 }
 
 document.addEventListener("keydown", e => {
@@ -767,7 +899,9 @@ Object.assign(window, {
   shareUrl, copyShareUrl, exportJSON, importJSON, resetToDefault,
   addGroup, deleteGroup, toggleGroupOos, addDomain, deleteDomain,
   startRenameSection, addSection, deleteSection,
-  toggleSidebar, saveVersion, restoreVersion, deleteVersion
+  toggleSidebar, saveVersion, restoreVersion, deleteVersion,
+  cyclePriority, exportExcel,
+  switchScenario, addScenario, deleteScenario, startRenameScenario
 });
 
 // ═══════════════════════════════════════════════════════
@@ -775,6 +909,8 @@ Object.assign(window, {
 // ═══════════════════════════════════════════════════════
 try { loadLocal(); } catch(e) {}
 if (!isValidState(S)) S = clone(DEFAULT_STATE);
+if (!S.scenarios) S = migrateState(S) || clone(DEFAULT_STATE);
+if (!S.activeScenario) S.activeScenario = S.scenarios[0].id;
 try { render(); } catch(e) { S = clone(DEFAULT_STATE); render(); }
 autoReconnect();
 </script>

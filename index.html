@@ -59,8 +59,14 @@
   .group.sortable-chosen { box-shadow: var(--shadow-lg); border-color: var(--blue); }
   .group.sortable-ghost { opacity: .4; }
 
-  .group-header { display: flex; align-items: center; gap: 6px; padding: 9px 10px 8px; border-bottom: 2px solid var(--blue-mid); user-select: none; }
+  .group-header { display: flex; align-items: center; gap: 6px; padding: 9px 10px 8px; border-bottom: 2px solid var(--blue-mid); user-select: none; overflow: hidden; }
   .group.oos .group-header { border-bottom-color: var(--oos); }
+  .group-pri { flex-shrink: 0; font-size: 9px; font-weight: 800; width: 16px; height: 16px; border-radius: 3px; display: flex; align-items: center; justify-content: center; cursor: pointer; letter-spacing: 0; }
+  .group-pri-h { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .group-pri-m { background: var(--amber-bg); color: #92400e; border: 1px solid #fde68a; }
+  .group-pri-l { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+  .group-pri-none { background: var(--grey); color: var(--text-light); border: 1px solid var(--grey-border); opacity: 0; }
+  .group-header:hover .group-pri-none { opacity: 1; }
 
   .drag-handle { cursor: grab; color: var(--text-light); font-size: 14px; line-height: 1; padding: 1px 2px; border-radius: 3px; flex-shrink: 0; }
   .drag-handle:hover { background: var(--grey); }
@@ -165,6 +171,9 @@
   .tab-del:hover { color: var(--red); background: #fee2e2; }
   .tab-add { padding: 8px 12px 7px; cursor: pointer; color: var(--text-light); font-size: 18px; line-height: 1; border: none; background: transparent; border-radius: 4px 4px 0 0; font-weight: 300; }
   .tab-add:hover { color: var(--blue); background: var(--grey); }
+  .tab-age { font-size: 9px; color: var(--text-light); margin-left: 3px; opacity: 0.7; }
+  .tab.active .tab-age { color: var(--blue); opacity: 0.7; }
+  .tab-primary-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; flex-shrink: 0; margin-right: 2px; display: inline-block; }
 </style>
 </head>
 <body>
@@ -330,7 +339,8 @@ const DEFAULT_STATE = {
       ]
     }
     ] // end sections
-  }]  // end scenarios
+  }],  // end scenarios
+  deletedScenarios: []  // tracks IDs of deleted scenarios so deletions propagate across users
 };
 
 // ═══════════════════════════════════════════════════════
@@ -349,13 +359,43 @@ function isValidState(o) {
 }
 function migrateState(p) {
   if (!p) return null;
-  if (p.scenarios) return p; // already new format
+  if (p.scenarios) {
+    p.deletedScenarios = p.deletedScenarios || [];
+    return p;
+  }
   if (p.sections) { // legacy single-scenario format
     const id = "sc-migrated";
-    return { activeScenario: id, scenarios: [{ id, name: "Default", versions: p.versions||[], sections: p.sections }] };
+    return { activeScenario: id, deletedScenarios: [], scenarios: [{ id, name: "Default", versions: p.versions||[], sections: p.sections }] };
   }
   return null;
 }
+
+// ── SCENARIO MERGE ───────────────────────────────────────────────────────
+// Merges two scenario arrays by lastModified timestamp, respecting deletions.
+// Allows parallel edits on different tabs without one overwriting the other.
+function mergeScenarios(localScs, remoteScs, localDeleted, remoteDeleted) {
+  const allDeleted = new Set([...(localDeleted||[]), ...(remoteDeleted||[])]);
+  const merged = [];
+  const allIds = [];
+  // Preserve order: locals first (maintains tab order), then new ones from remote
+  localScs.forEach(s => { if (!allIds.includes(s.id)) allIds.push(s.id); });
+  remoteScs.forEach(s => { if (!allIds.includes(s.id)) allIds.push(s.id); });
+  allIds.forEach(id => {
+    if (allDeleted.has(id)) return; // skip deleted
+    const local = localScs.find(s=>s.id===id);
+    const remote = remoteScs.find(s=>s.id===id);
+    if (local && remote) {
+      // Take whichever was modified more recently
+      merged.push((local.lastModified||0) >= (remote.lastModified||0) ? local : remote);
+    } else if (local) {
+      merged.push(local);
+    } else if (remote) {
+      merged.push(remote); // new scenario from another user
+    }
+  });
+  return merged.length > 0 ? merged : localScs;
+}
+
 // Returns the active scenario object
 function cur() { return S.scenarios.find(sc=>sc.id===S.activeScenario)||S.scenarios[0]; }
 
@@ -422,7 +462,16 @@ async function _doConnect(url, key, room) {
     if (error) { console.warn("DB read error:", error.message); }
 
     if (data && isValidState(data.state)) {
-      S = migrateState(data.state) || data.state;
+      const remote = migrateState(data.state) || data.state;
+      // Merge remote scenarios into local — keeps each user on their own active tab
+      // and prevents DB load from overwriting work done before reconnect
+      const localActiveId = S.activeScenario;
+      S.scenarios = mergeScenarios(S.scenarios, remote.scenarios, S.deletedScenarios, remote.deletedScenarios);
+      S.deletedScenarios = [...new Set([...(S.deletedScenarios||[]), ...(remote.deletedScenarios||[])])];
+      // Stay on our active tab unless it was deleted
+      if (!S.scenarios.find(sc=>sc.id===localActiveId)) {
+        S.activeScenario = S.scenarios[0]?.id || localActiveId;
+      }
       render(); saveLocal();
     } else {
       // No state in DB yet — push ours
@@ -441,7 +490,17 @@ async function _doConnect(url, key, room) {
       const d = msg.payload?.state;
       if (!isValidState(d)) return;
       sbBusy = true;
-      S = migrateState(d) || d; render(); saveLocal();
+      const remote = migrateState(d) || d;
+      const localActiveId = S.activeScenario;
+      // Merge: update all scenarios from remote, but keep our active tab unchanged
+      // This lets Person A edit "Default" and Person B edit "Copy" without conflicts
+      S.scenarios = mergeScenarios(S.scenarios, remote.scenarios, S.deletedScenarios, remote.deletedScenarios);
+      S.deletedScenarios = [...new Set([...(S.deletedScenarios||[]), ...(remote.deletedScenarios||[])])];
+      // Keep our active tab (don't let someone else's tab switch affect us)
+      if (!S.scenarios.find(sc=>sc.id===localActiveId)) {
+        S.activeScenario = S.scenarios[0]?.id || localActiveId;
+      }
+      render(); saveLocal();
       setTimeout(() => sbBusy = false, 80);
     }).subscribe((status) => {
       if (status === "SUBSCRIBED") {
@@ -465,13 +524,26 @@ function sbPush() {
   clearTimeout(sbPushTimer);
   sbPushTimer = setTimeout(async () => {
     sbBusy = true;
-    const state = clone(S);
+    // Stamp this scenario as freshly modified so merge logic picks the right version
+    cur().lastModified = Date.now();
+    const stateSnapshot = clone(S);
     try {
-      // Broadcast to live users (instant)
-      await sbChannel.send({ type: "broadcast", event: "state", payload: { state } });
-      // Persist to database (survives disconnects)
+      // Broadcast to live users instantly (full state so everyone can merge)
+      await sbChannel.send({ type: "broadcast", event: "state", payload: { state: stateSnapshot } });
+      // DB: read-modify-write — merge with current DB state so parallel edits on
+      // different tabs don't overwrite each other
+      let writeState = stateSnapshot;
+      try {
+        const { data } = await sbClient.from("taxonomy_state").select("state").eq("room", sbRoom).maybeSingle();
+        if (data && isValidState(data.state)) {
+          const dbState = migrateState(data.state) || data.state;
+          const mergedScenarios = mergeScenarios(stateSnapshot.scenarios, dbState.scenarios, stateSnapshot.deletedScenarios, dbState.deletedScenarios);
+          const allDeleted = [...new Set([...(stateSnapshot.deletedScenarios||[]), ...(dbState.deletedScenarios||[])])];
+          writeState = { ...stateSnapshot, scenarios: mergedScenarios, deletedScenarios: allDeleted };
+        }
+      } catch(readErr) { /* ignore read errors — just write what we have */ }
       await sbClient.from("taxonomy_state").upsert({
-        room: sbRoom, state, updated_at: new Date().toISOString()
+        room: sbRoom, state: writeState, updated_at: new Date().toISOString()
       });
     } catch(e) { toast("Sync error: " + e.message); }
     setTimeout(() => sbBusy = false, 80);
@@ -573,10 +645,14 @@ function buildGroup(grp, sid) {
   el.className = "group"+(grp.oos?" oos":""); el.dataset.gid = grp.id;
   const hdr = document.createElement("div");
   hdr.className = "group-header";
+  const gPri = grp.priority || "";
+  const gPriClass = gPri ? `group-pri group-pri-${gPri.toLowerCase()}` : "group-pri group-pri-none";
+  const gPriLabel = gPri || "·";
   hdr.innerHTML = `
     <span class="drag-handle group-drag" title="Drag group">⠿</span>
-    <div class="group-name-wrap"><span class="group-name" title="Double-click to rename">${esc(grp.name)}</span></div>
-    <div class="group-actions">
+    <div class="group-name-wrap" style="flex:1;min-width:0;overflow:hidden"><span class="group-name" title="Double-click to rename" style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(grp.name)}</span></div>
+    <div class="group-actions" style="flex-shrink:0;display:flex;align-items:center;gap:2px">
+      <span class="${gPriClass}" title="Right-click to cycle priority" onclick="cycleGroupPriority('${grp.id}')">${gPriLabel}</span>
       <button class="icon-btn" title="${grp.oos?"Mark In Scope":"Mark Out of Scope"}" onclick="toggleGroupOos('${grp.id}')">${grp.oos?
         `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>` :
         `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
@@ -772,6 +848,15 @@ function copyShareUrl() {
     .then(()=>{ toast("✅ Link copied!"); closeModal("shareOverlay"); });
 }
 
+function cycleGroupPriority(gid) {
+  pushU();
+  const g = findGroup(gid); if (!g) return;
+  const cycle = {"":"H","H":"M","M":"L","L":""};
+  g.priority = cycle[g.priority||""];
+  saveLocal(); sbPush(); render();
+  const label = {"H":"🔴 High","M":"🟡 Medium","L":"🟢 Low","":"removed"}[g.priority];
+  toast("Group priority " + label);
+}
 function cyclePriority(gid, did) {
   pushU();
   const d = findDomain(gid, did); if (!d) return;
@@ -785,16 +870,16 @@ function cyclePriority(gid, did) {
 
 function exportExcel() {
   // Build rows
-  const rows = [["Section","Group","Domain","OOS","Priority"]];
+  const rows = [["Scenario","Section","Group","Group Priority","Domain","OOS","Domain Priority"]];
   const scenarioName = cur().name || "Scenario";
   rows[0].unshift("Scenario");
   cur().sections.forEach(sec => {
     sec.groups.forEach(grp => {
       if (grp.domains.length === 0) {
-        rows.push([scenarioName, sec.label, grp.name, "", grp.oos?"Yes":"", ""]);
+        rows.push([scenarioName, sec.label, grp.name, grp.priority||"", "", grp.oos?"Yes":"", ""]);
       } else {
         grp.domains.forEach(d => {
-          rows.push([scenarioName, sec.label, grp.name, d.name, d.oos?"Yes":"", d.priority||""]);
+          rows.push([scenarioName, sec.label, grp.name, grp.priority||"", d.name, d.oos?"Yes":"", d.priority||""]);
         });
       }
     });
@@ -824,20 +909,49 @@ function resetToDefault() {
 }
 
 // ── SCENARIO TABS ──────────────────────────────────────────────────────
+function timeAgo(ts) {
+  if (!ts) return "";
+  const mins = Math.floor((Date.now() - ts) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return mins + "m ago";
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + "h ago";
+  return Math.floor(hrs / 24) + "d ago";
+}
+
 function renderTabs() {
   const bar = document.getElementById("tabBar");
   if (!bar) return;
   bar.innerHTML = "";
   const scenarios = S.scenarios || [];
-  scenarios.forEach(sc => {
+  scenarios.forEach((sc, idx) => {
     const tab = document.createElement("div");
     tab.className = "tab" + (sc.id === S.activeScenario ? " active" : "");
     tab.dataset.scid = sc.id;
+    tab.title = "Double-click to rename";
+
+    // Primary dot for first scenario (the "live" main version)
+    if (idx === 0) {
+      const dot = document.createElement("span");
+      dot.className = "tab-primary-dot";
+      dot.title = "Primary scenario";
+      tab.appendChild(dot);
+    }
+
     const nameSpan = document.createElement("span");
     nameSpan.className = "tab-name";
     nameSpan.textContent = sc.name;
     nameSpan.ondblclick = e => { e.stopPropagation(); startRenameScenario(sc.id, nameSpan); };
     tab.appendChild(nameSpan);
+
+    // Last-edited timestamp
+    if (sc.lastModified) {
+      const age = document.createElement("span");
+      age.className = "tab-age";
+      age.textContent = timeAgo(sc.lastModified);
+      tab.appendChild(age);
+    }
+
     if (scenarios.length > 1) {
       const del = document.createElement("button");
       del.className = "tab-del"; del.title = "Delete scenario"; del.textContent = "×";
@@ -861,9 +975,10 @@ function addScenario() {
   const name = prompt("Scenario name (e.g. 'Option B', 'Q4 Draft'):"); if (!name||!name.trim()) return;
   const copy = confirm("Start with a copy of the current scenario?\n\nOK = copy current layout\nCancel = start blank");
   const id = genId();
-  const newSc = { id, name: name.trim(), versions: [],
+  const newSc = { id, name: name.trim(), versions: [], lastModified: Date.now(),
     sections: copy ? clone(cur().sections) : clone(DEFAULT_STATE.scenarios[0].sections) };
   pushU(); S.scenarios.push(newSc); S.activeScenario = id;
+  // Note: other users will receive the new scenario via merge but stay on their own active tab
   saveLocal(); sbPush(); render();
   toast("✅ Created: " + name.trim());
 }
@@ -871,7 +986,11 @@ function deleteScenario(id) {
   if (S.scenarios.length <= 1) return toast("Can't delete the last scenario");
   const sc = S.scenarios.find(s=>s.id===id); if (!sc) return;
   if (!confirm(`Delete scenario "${sc.name}" and all its content?`)) return;
-  pushU(); S.scenarios = S.scenarios.filter(s=>s.id!==id);
+  pushU();
+  S.scenarios = S.scenarios.filter(s=>s.id!==id);
+  // Record deletion so it propagates to other users via merge
+  S.deletedScenarios = S.deletedScenarios || [];
+  if (!S.deletedScenarios.includes(id)) S.deletedScenarios.push(id);
   if (S.activeScenario === id) S.activeScenario = S.scenarios[0].id;
   saveLocal(); sbPush(); render();
   toast("🗑 Scenario deleted");
@@ -900,7 +1019,7 @@ Object.assign(window, {
   addGroup, deleteGroup, toggleGroupOos, addDomain, deleteDomain,
   startRenameSection, addSection, deleteSection,
   toggleSidebar, saveVersion, restoreVersion, deleteVersion,
-  cyclePriority, exportExcel,
+  cycleGroupPriority, cyclePriority, exportExcel,
   switchScenario, addScenario, deleteScenario, startRenameScenario
 });
 
@@ -911,6 +1030,7 @@ try { loadLocal(); } catch(e) {}
 if (!isValidState(S)) S = clone(DEFAULT_STATE);
 if (!S.scenarios) S = migrateState(S) || clone(DEFAULT_STATE);
 if (!S.activeScenario) S.activeScenario = S.scenarios[0].id;
+if (!S.deletedScenarios) S.deletedScenarios = [];
 try { render(); } catch(e) { S = clone(DEFAULT_STATE); render(); }
 autoReconnect();
 </script>

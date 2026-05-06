@@ -407,11 +407,12 @@ function doRedo() { if (!redos.length) return toast("Nothing to redo"); undos.pu
 // LOCAL STORAGE
 // ═══════════════════════════════════════════════════════
 const LS_KEY = "domain-taxonomy-v2";
+let _loadedFromLocal = false; // true only if real user data was found in localStorage
 function saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e){} }
 function loadLocal() {
   try {
     const d = localStorage.getItem(LS_KEY);
-    if (d) { const p = JSON.parse(d); const m = migrateState(p); if (m && isValidState(m)) S = m; }
+    if (d) { const p = JSON.parse(d); const m = migrateState(p); if (m && isValidState(m)) { S = m; _loadedFromLocal = true; } }
   } catch(e) {}
 }
 
@@ -463,14 +464,21 @@ async function _doConnect(url, key, room) {
 
     if (data && isValidState(data.state)) {
       const remote = migrateState(data.state) || data.state;
-      // Merge remote scenarios into local — keeps each user on their own active tab
-      // and prevents DB load from overwriting work done before reconnect
-      const localActiveId = S.activeScenario;
-      S.scenarios = mergeScenarios(S.scenarios, remote.scenarios, S.deletedScenarios, remote.deletedScenarios);
-      S.deletedScenarios = [...new Set([...(S.deletedScenarios||[]), ...(remote.deletedScenarios||[])])];
-      // Stay on our active tab unless it was deleted
-      if (!S.scenarios.find(sc=>sc.id===localActiveId)) {
-        S.activeScenario = S.scenarios[0]?.id || localActiveId;
+      if (!_loadedFromLocal) {
+        // Fresh browser / cleared cache — no real local data, just use Supabase wholesale.
+        // Do NOT merge: the local state is just the hardcoded default and should not
+        // introduce phantom "Scenario A" tabs into everyone else's board.
+        S = remote;
+        if (!S.deletedScenarios) S.deletedScenarios = [];
+      } else {
+        // We have genuine local data (user was here before) — merge to preserve
+        // any edits made offline or before reconnect.
+        const localActiveId = S.activeScenario;
+        S.scenarios = mergeScenarios(S.scenarios, remote.scenarios, S.deletedScenarios, remote.deletedScenarios);
+        S.deletedScenarios = [...new Set([...(S.deletedScenarios||[]), ...(remote.deletedScenarios||[])])];
+        if (!S.scenarios.find(sc=>sc.id===localActiveId)) {
+          S.activeScenario = S.scenarios[0]?.id || localActiveId;
+        }
       }
       render(); saveLocal();
     } else {
